@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ritmo — controle de hábitos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --night: #171b2e;
+    --night-soft: #2a3050;
+    --paper: #f7f5f0;
+    --paper-raised: #ffffff;
+    --ink: #1c1f2b;
+    --ink-soft: #63687a;
+    --line: #e2e0d8;
+    --dawn: #e0895f;
+    --dawn-soft: #f2d9c9;
+    --moss: #5c8768;
+    --moss-soft: #dbe8dd;
+    --danger: #b1543f;
+    --shadow: rgba(23, 27, 46, 0.08);
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #12141f; --paper-raised: #1a1d2c; --ink: #eceaf0; --ink-soft: #9a9db0;
+      --line: #2c2f42; --night: #0c0e18; --night-soft: #1e2340; --dawn-soft: #3a2b25;
+      --moss-soft: #1f2e24; --shadow: rgba(0,0,0,0.35); color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #12141f; --paper-raised: #1a1d2c; --ink: #eceaf0; --ink-soft: #9a9db0;
+    --line: #2c2f42; --night: #0c0e18; --night-soft: #1e2340; --dawn-soft: #3a2b25;
+    --moss-soft: #1f2e24; --shadow: rgba(0,0,0,0.35); color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper); color: var(--ink);
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+    min-height: 100vh; -webkit-font-smoothing: antialiased;
+  }
+  .shell { max-width: 560px; margin: 0 auto; padding: 28px 18px 64px; }
+
+  header.top { display: flex; flex-direction: column; gap: 4px; margin-bottom: 18px; }
+  header.top .word {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 34px;
+    font-optical-sizing: auto; letter-spacing: -0.01em; line-height: 1; color: var(--ink);
+  }
+  header.top .word em { font-style: italic; color: var(--dawn); }
+  header.top .tag { color: var(--ink-soft); font-size: 14px; }
+
+  .tabs {
+    display: flex; gap: 4px; background: var(--paper-raised);
+    border: 1px solid var(--line); border-radius: 14px; padding: 4px; margin-bottom: 18px;
+  }
+  .tabs button {
+    flex: 1; border: none; background: transparent; color: var(--ink-soft);
+    font-family: 'Space Grotesk', sans-serif; font-size: 13.5px; font-weight: 600;
+    padding: 10px 6px; border-radius: 10px; cursor: pointer; transition: background .15s ease, color .15s ease;
+  }
+  .tabs button.active { background: var(--night); color: #f4f2ec; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .day-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--night); border-radius: 16px; padding: 14px 8px; margin-bottom: 16px; color: #f4f2ec;
+  }
+  .day-nav button.arrow {
+    background: none; border: none; color: #f4f2ec; font-size: 20px; width: 42px; height: 42px;
+    border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s ease;
+  }
+  .day-nav button.arrow:hover { background: rgba(255,255,255,0.1); }
+  .day-nav .center { text-align: center; flex: 1; }
+  .day-nav .date-label { font-size: 16px; font-weight: 500; }
+  .day-nav .today-pill {
+    margin-top: 4px; display: inline-block; font-size: 11px; color: var(--dawn);
+    background: rgba(224, 137, 95, 0.16); padding: 2px 10px; border-radius: 999px; cursor: pointer; border: none;
+  }
+
+  .card {
+    background: var(--paper-raised); border-radius: 18px; box-shadow: 0 1px 2px var(--shadow);
+    border: 1px solid var(--line); overflow: hidden; margin-bottom: 18px;
+  }
+
+  .metric-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+  .metric-row.bordered { border-bottom: 1px solid var(--line); }
+  .metric-block:last-child .metric-row.bordered { border-bottom: none; }
+
+  .metric-icon {
+    width: 38px; height: 38px; border-radius: 11px; display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0;
+  }
+  .metric-icon svg { width: 19px; height: 19px; }
+
+  .metric-info { flex: 1; min-width: 0; }
+  .metric-info .label { font-size: 14.5px; font-weight: 500; color: var(--ink); }
+  .metric-info .value-line { font-size: 12.5px; color: var(--ink-soft); margin-top: 1px; }
+  .metric-info .value-line strong { color: var(--ink); font-weight: 600; }
+
+  .stepper {
+    display: flex; align-items: center; gap: 2px; background: var(--paper); border: 1px solid var(--line);
+    border-radius: 10px; padding: 3px; flex-shrink: 0;
+  }
+  .stepper button {
+    width: 28px; height: 28px; border-radius: 7px; border: none; background: transparent;
+    color: var(--ink); font-size: 16px; line-height: 1; cursor: pointer;
+  }
+  .stepper button:active { background: var(--line); }
+  .stepper input {
+    width: 46px; text-align: center; border: none; background: transparent;
+    font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: var(--ink);
+    -moz-appearance: textfield;
+  }
+  .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .stepper input:focus { outline: none; }
+
+  .quick-adds { display: flex; gap: 8px; padding: 0 16px 14px 66px; }
+  .quick-adds.bordered-bottom { border-bottom: 1px solid var(--line); }
+  .quick-chip {
+    font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; font-weight: 600;
+    color: var(--night-soft); background: var(--paper); border: 1px solid var(--line);
+    border-radius: 999px; padding: 6px 13px; cursor: pointer;
+  }
+  .quick-chip:active { background: var(--line); }
+
+  .toggle-row .metric-info .value-line { display: none; }
+  .toggle {
+    position: relative; width: 50px; height: 30px; border-radius: 999px; background: var(--line);
+    border: none; cursor: pointer; flex-shrink: 0; transition: background 0.18s ease;
+  }
+  .toggle::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+    background: var(--paper-raised); box-shadow: 0 1px 2px rgba(0,0,0,0.25); transition: transform 0.18s ease;
+  }
+  .toggle.on { background: var(--moss); }
+  .toggle.on::after { transform: translateX(20px); }
+
+  .save-bar { display: flex; gap: 10px; margin-bottom: 26px; }
+  .save-bar button {
+    font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600;
+    border-radius: 12px; padding: 13px 16px; cursor: pointer; border: none;
+  }
+  .save-bar .save { flex: 1; background: var(--night); color: #f4f2ec; }
+  .save-bar .clear { background: transparent; color: var(--danger); border: 1px solid var(--line); }
+  .save-flash { text-align: center; font-size: 12.5px; color: var(--moss); margin: -14px 0 20px; min-height: 16px; }
+
+  .section-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; margin: 0 0 12px 2px; }
+  .section-sub { font-size: 12.5px; color: var(--ink-soft); margin: -8px 0 14px 2px; }
+
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 22px; }
+  .stat-box { background: var(--paper-raised); border: 1px solid var(--line); border-radius: 14px; padding: 12px 10px; text-align: center; }
+  .stat-box .num { font-family: 'Fraunces', serif; font-size: 21px; font-weight: 600; color: var(--night-soft); }
+  .stat-box .cap { font-size: 10.5px; color: var(--ink-soft); margin-top: 2px; line-height: 1.3; }
+
+  /* dashboard progress cards */
+  .progress-card { padding: 15px 16px; border-bottom: 1px solid var(--line); }
+  .progress-card:last-child { border-bottom: none; }
+  .progress-top { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .progress-top .metric-icon { width: 32px; height: 32px; border-radius: 9px; }
+  .progress-top .metric-icon svg { width: 16px; height: 16px; }
+  .progress-top .p-label { font-size: 14px; font-weight: 500; flex: 1; }
+  .progress-top .p-value { font-size: 12.5px; color: var(--ink-soft); }
+  .progress-top .p-value strong { color: var(--ink); font-weight: 600; }
+  .progress-track { height: 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); overflow: hidden; margin-bottom: 10px; }
+  .progress-fill { height: 100%; border-radius: 999px; background: var(--moss); transition: width .25s ease; }
+  .progress-fill.over { background: var(--dawn); }
+
+  .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 44px; }
+  .week-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; justify-content: flex-end; height: 100%; }
+  .week-bar .bar { width: 100%; border-radius: 4px 4px 2px 2px; background: var(--line); min-height: 3px; }
+  .week-bar .bar.hit { background: var(--moss); }
+  .week-bar .bar.today { background: var(--dawn); }
+  .week-bar .dlabel { font-size: 9px; color: var(--ink-soft); }
+
+  .week-dots { display: flex; gap: 6px; margin-top: 2px; }
+  .week-dots .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--ink-soft); }
+  .week-dots .dot.on { background: var(--moss); border-color: var(--moss); color: #fff; }
+
+  /* goals view */
+  .goal-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .goal-row:last-child { border-bottom: none; }
+  .goal-row .metric-info { flex: 1; }
+  .goal-input-wrap { display: flex; align-items: center; gap: 6px; background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 6px 10px; }
+  .goal-input-wrap input {
+    width: 56px; border: none; background: transparent; text-align: right;
+    font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .goal-input-wrap input:focus { outline: none; }
+  .goal-input-wrap .unit { font-size: 12px; color: var(--ink-soft); }
+
+  .history-item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-bottom: 1px solid var(--line); cursor: pointer; background: var(--paper-raised); }
+  .history-item:first-child { border-radius: 18px 18px 0 0; }
+  .history-item:last-child { border-radius: 0 0 18px 18px; border-bottom: none; }
+  .history-item:hover { background: var(--paper); }
+  .history-item.active { background: var(--dawn-soft); }
+  .history-date { width: 54px; flex-shrink: 0; }
+  .history-date .dow { font-size: 10.5px; color: var(--ink-soft); text-transform: uppercase; letter-spacing: 0.03em; }
+  .history-date .dom { font-family: 'Fraunces', serif; font-size: 19px; font-weight: 600; }
+  .history-chips { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 11px; padding: 3px 8px; border-radius: 999px; background: var(--paper); color: var(--ink-soft); border: 1px solid var(--line); }
+  .chip strong { color: var(--ink); font-weight: 600; }
+  .empty-note { text-align: center; color: var(--ink-soft); font-size: 13px; padding: 26px 10px; background: var(--paper-raised); border-radius: 18px; border: 1px solid var(--line); }
+
+  .goals-save-flash { text-align: center; font-size: 12.5px; color: var(--moss); margin: 12px 0 6px; min-height: 16px; }
+
+  ::selection { background: var(--dawn-soft); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header class="top">
+    <div class="word">R<em>i</em>tmo</div>
+    <div class="tag">Sono, leitura, água, treino e mais — registrado em segundos.</div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="log">Hoje</button>
+    <button class="tab" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="goals">Metas</button>
+  </div>
+
+  <!-- LOG VIEW -->
+  <div class="view active" id="view-log">
+    <div class="day-nav">
+      <button class="arrow" id="prevDay" aria-label="Dia anterior">‹</button>
+      <div class="center">
+        <div class="date-label" id="dateLabel">—</div>
+        <button class="today-pill" id="todayBtn" style="display:none;">ir para hoje</button>
+      </div>
+      <button class="arrow" id="nextDay" aria-label="Próximo dia">›</button>
+    </div>
+
+    <div class="card" id="metricsCard"></div>
+    <div class="card" id="togglesCard"></div>
+
+    <div class="save-bar">
+      <button class="save" id="saveBtn">Salvar dia</button>
+      <button class="clear" id="clearBtn">Limpar</button>
+    </div>
+    <div class="save-flash" id="saveFlash"></div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div class="view" id="view-dashboard">
+    <div class="section-title">Hoje</div>
+    <div class="section-sub">Progresso do dia em relação às metas.</div>
+    <div class="stats-row" id="statsRow"></div>
+    <div class="card" id="progressCard"></div>
+
+    <div class="section-title">Últimos 7 dias</div>
+    <div class="section-sub">Toque em "Metas" para ajustar os alvos.</div>
+    <div class="card" id="weekCard"></div>
+
+    <div class="section-title">Histórico</div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- GOALS VIEW -->
+  <div class="view" id="view-goals">
+    <div class="section-title">Metas diárias</div>
+    <div class="section-sub">Define quanto você quer atingir por dia em cada hábito.</div>
+    <div class="card" id="goalsMetricsCard"></div>
+
+    <div class="section-title">Metas semanais</div>
+    <div class="section-sub">Quantos dias por semana você quer marcar "sim".</div>
+    <div class="card" id="goalsToggleCard"></div>
+
+    <div class="goals-save-flash" id="goalsFlash"></div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'ritmo-entries-v1';
+  const GOALS_KEY = 'ritmo-goals-v1';
+
+  const METRICS = [
+    { key: 'sleepHours', label: 'Sono', unit: 'h', step: 0.5, min: 0, max: 16, decimals: 1,
+      icon: iconMoon, bg: 'var(--night-soft)', fg: '#eef0ff' },
+    { key: 'readingMin', label: 'Leitura', unit: 'min', step: 5, min: 0, max: 300, decimals: 0,
+      icon: iconBook, bg: 'var(--dawn-soft)', fg: 'var(--dawn)' },
+    { key: 'waterMl', label: 'Água', unit: 'ml', step: 100, min: 0, max: 6000, decimals: 0,
+      icon: iconDrop, bg: '#dbe9f2', fg: '#3c7ea8', quickAdds: [200, 500] },
+    { key: 'aerobicMin', label: 'Aeróbico', unit: 'min', step: 5, min: 0, max: 240, decimals: 0,
+      icon: iconRun, bg: 'var(--moss-soft)', fg: 'var(--moss)' },
+    { key: 'muscMin', label: 'Musculação', unit: 'min', step: 5, min: 0, max: 240, decimals: 0,
+      icon: iconDumbbell, bg: 'var(--moss-soft)', fg: 'var(--moss)' },
+    { key: 'calories', label: 'Calorias', unit: 'kcal', step: 50, min: 0, max: 6000, decimals: 0,
+      icon: iconFlame, bg: '#f3ddd2', fg: '#c15b3a' },
+  ];
+
+  const TOGGLES = [
+    { key: 'sex', label: 'Sexo', icon: iconHeart, bg: '#f3d9df', fg: '#b1546e' },
+    { key: 'creatine', label: 'Creatina', icon: iconPill, bg: '#e2ddf5', fg: '#6b57ab' },
+  ];
+
+  const DEFAULT_GOALS = {
+    sleepHours: 8, readingMin: 30, waterMl: 2000, aerobicMin: 30, muscMin: 45, calories: 2200,
+    sex_weekly: 3, creatine_weekly: 7,
+  };
+
+  const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  const MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+  let entries = {};
+  let goals = { ...DEFAULT_GOALS };
+  let currentDate = startOfDay(new Date());
+  let draft = emptyEntry();
+
+  function startOfDay(d) { const c = new Date(d); c.setHours(0,0,0,0); return c; }
+  function isoOf(d) {
+    const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  }
+  function isSameDay(a, b) { return isoOf(a) === isoOf(b); }
+  function addDays(d, n) { const c = new Date(d); c.setDate(c.getDate()+n); return c; }
+
+  function loadEntries() {
+    try { const raw = localStorage.getItem(STORAGE_KEY); entries = raw ? JSON.parse(raw) : {}; }
+    catch (e) { entries = {}; }
+  }
+  function persistEntries() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+    catch (e) { console.error('Não foi possível salvar', e); }
+  }
+  function loadGoals() {
+    try {
+      const raw = localStorage.getItem(GOALS_KEY);
+      goals = raw ? { ...DEFAULT_GOALS, ...JSON.parse(raw) } : { ...DEFAULT_GOALS };
+    } catch (e) { goals = { ...DEFAULT_GOALS }; }
+  }
+  function persistGoals() {
+    try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); }
+    catch (e) { console.error('Não foi possível salvar metas', e); }
+  }
+
+  function emptyEntry() {
+    const e = {};
+    METRICS.forEach(m => e[m.key] = 0);
+    TOGGLES.forEach(t => e[t.key] = false);
+    return e;
+  }
+  function getDraft(iso) { return entries[iso] ? { ...emptyEntry(), ...entries[iso] } : emptyEntry(); }
+  function fmtNum(v, decimals) { return decimals > 0 ? Number(v).toFixed(decimals) : String(Math.round(v)); }
+
+  // ---------- TABS ----------
+  document.querySelectorAll('.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('view-' + btn.dataset.tab).classList.add('active');
+      if (btn.dataset.tab === 'dashboard') renderDashboard();
+      if (btn.dataset.tab === 'goals') renderGoalsView();
+    });
+  });
+
+  // ---------- LOG VIEW ----------
+  function renderDateLabel() {
+    const today = startOfDay(new Date());
+    const label = `${WEEKDAYS[currentDate.getDay()]}, ${currentDate.getDate()} de ${MONTHS[currentDate.getMonth()]} de ${currentDate.getFullYear()}`;
+    document.getElementById('dateLabel').textContent = isSameDay(currentDate, today) ? `Hoje · ${currentDate.getDate()} ${MONTHS[currentDate.getMonth()]}` : label;
+    document.getElementById('todayBtn').style.display = isSameDay(currentDate, today) ? 'none' : 'inline-block';
+  }
+
+  function renderMetrics() {
+    const card = document.getElementById('metricsCard');
+    card.innerHTML = '';
+    METRICS.forEach((m, idx) => {
+      const block = document.createElement('div');
+      block.className = 'metric-block';
+      const hasBorder = idx < METRICS.length - 1;
+      const rowBorderClass = (m.quickAdds ? '' : (hasBorder ? 'bordered' : ''));
+      block.innerHTML = `
+        <div class="metric-row ${rowBorderClass}">
+          <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
+          <div class="metric-info">
+            <div class="label">${m.label}</div>
+            <div class="value-line">registrado: <strong>${fmtNum(draft[m.key], m.decimals)} ${m.unit}</strong></div>
+          </div>
+          <div class="stepper">
+            <button data-act="dec" data-key="${m.key}" aria-label="Diminuir">−</button>
+            <input type="number" inputmode="decimal" data-key="${m.key}" value="${fmtNum(draft[m.key], m.decimals)}" step="${m.step}" min="${m.min}" max="${m.max}">
+            <button data-act="inc" data-key="${m.key}" aria-label="Aumentar">+</button>
+          </div>
+        </div>
+        ${m.quickAdds ? `<div class="quick-adds ${hasBorder ? 'bordered-bottom' : ''}">
+          ${m.quickAdds.map(q => `<button class="quick-chip" data-key="${m.key}" data-add="${q}">+${q}${m.unit}</button>`).join('')}
+        </div>` : ''}
+      `;
+      card.appendChild(block);
+    });
+
+    card.querySelectorAll('button[data-act]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        const m = METRICS.find(x => x.key === key);
+        const delta = btn.dataset.act === 'inc' ? m.step : -m.step;
+        setMetric(key, draft[key] + delta, m);
+      });
+    });
+    card.querySelectorAll('input[type="number"]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const key = inp.dataset.key;
+        const m = METRICS.find(x => x.key === key);
+        const val = parseFloat(inp.value);
+        setMetric(key, isNaN(val) ? 0 : val, m);
+      });
+    });
+    card.querySelectorAll('.quick-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        const m = METRICS.find(x => x.key === key);
+        const add = parseFloat(btn.dataset.add);
+        setMetric(key, draft[key] + add, m);
+      });
+    });
+  }
+
+  function setMetric(key, value, m) {
+    value = Math.min(m.max, Math.max(m.min, value));
+    draft[key] = Math.round(value / m.step) * m.step;
+    renderMetrics();
+  }
+
+  function renderToggles() {
+    const card = document.getElementById('togglesCard');
+    card.innerHTML = '';
+    TOGGLES.forEach((t, idx) => {
+      const row = document.createElement('div');
+      row.className = 'metric-row toggle-row' + (idx < TOGGLES.length - 1 ? ' bordered' : '');
+      row.innerHTML = `
+        <div class="metric-icon" style="background:${t.bg}; color:${t.fg}">${t.icon()}</div>
+        <div class="metric-info"><div class="label">${t.label}</div></div>
+        <button class="toggle ${draft[t.key] ? 'on' : ''}" data-key="${t.key}" aria-label="${t.label}"></button>
+      `;
+      card.appendChild(row);
+    });
+    card.querySelectorAll('.toggle').forEach(btn => {
+      btn.addEventListener('click', () => { draft[btn.dataset.key] = !draft[btn.dataset.key]; renderToggles(); });
+    });
+  }
+
+  function flashSaved(msg, elId) {
+    const el = document.getElementById(elId || 'saveFlash');
+    el.textContent = msg;
+    setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 1800);
+  }
+
+  function saveDay() {
+    entries[isoOf(currentDate)] = { ...draft };
+    persistEntries();
+    flashSaved('Dia salvo.');
+  }
+  function clearDay() {
+    delete entries[isoOf(currentDate)];
+    persistEntries();
+    draft = emptyEntry();
+    renderMetrics(); renderToggles();
+    flashSaved('Dia limpo.');
+  }
+  function goToDate(d) {
+    currentDate = startOfDay(d);
+    draft = getDraft(isoOf(currentDate));
+    renderDateLabel(); renderMetrics(); renderToggles();
+  }
+
+  document.getElementById('prevDay').addEventListener('click', () => goToDate(addDays(currentDate, -1)));
+  document.getElementById('nextDay').addEventListener('click', () => goToDate(addDays(currentDate, 1)));
+  document.getElementById('todayBtn').addEventListener('click', () => goToDate(new Date()));
+  document.getElementById('saveBtn').addEventListener('click', saveDay);
+  document.getElementById('clearBtn').addEventListener('click', clearDay);
+
+  // ---------- DASHBOARD VIEW ----------
+  function renderDashboard() {
+    const today = startOfDay(new Date());
+    const todayEntry = entries[isoOf(today)] || emptyEntry();
+
+    // top stat boxes
+    let streak = 0;
+    for (let i = 0; i < 400; i++) {
+      const e = entries[isoOf(addDays(today, -i))];
+      if (e && e.creatine) streak++; else break;
+    }
+    let sleepSum = 0, sleepCount = 0, waterSum = 0, waterCount = 0;
+    for (let i = 0; i < 7; i++) {
+      const e = entries[isoOf(addDays(today, -i))];
+      if (e) {
+        if (e.sleepHours) { sleepSum += e.sleepHours; sleepCount++; }
+        if (e.waterMl) { waterSum += e.waterMl; waterCount++; }
+      }
+    }
+    const statsRow = document.getElementById('statsRow');
+    statsRow.innerHTML = '';
+    [
+      { num: streak, cap: 'dias seguidos com creatina' },
+      { num: sleepCount ? (sleepSum / sleepCount).toFixed(1) : '—', cap: 'média de sono (7d)' },
+      { num: waterCount ? Math.round(waterSum / waterCount) : '—', cap: 'média de água ml (7d)' },
+    ].forEach(s => {
+      const box = document.createElement('div');
+      box.className = 'stat-box';
+      box.innerHTML = `<div class="num">${s.num}</div><div class="cap">${s.cap}</div>`;
+      statsRow.appendChild(box);
+    });
+
+    // today's progress bars
+    const progressCard = document.getElementById('progressCard');
+    progressCard.innerHTML = '';
+    METRICS.forEach(m => {
+      const val = todayEntry[m.key] || 0;
+      const goal = goals[m.key] || 0;
+      const pct = goal > 0 ? Math.min(100, Math.round((val / goal) * 100)) : (val > 0 ? 100 : 0);
+      const over = goal > 0 && val > goal;
+      const wrap = document.createElement('div');
+      wrap.className = 'progress-card';
+      wrap.innerHTML = `
+        <div class="progress-top">
+          <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
+          <div class="p-label">${m.label}</div>
+          <div class="p-value"><strong>${fmtNum(val, m.decimals)}</strong> / ${goal || '—'} ${m.unit}</div>
+        </div>
+        <div class="progress-track"><div class="progress-fill ${over ? 'over' : ''}" style="width:${pct}%"></div></div>
+      `;
+      progressCard.appendChild(wrap);
+    });
+
+    // weekly section: 7-bar charts for metrics + dot rows for toggles
+    const weekCard = document.getElementById('weekCard');
+    weekCard.innerHTML = '';
+    const last7 = [];
+    for (let i = 6; i >= 0; i--) last7.push(addDays(today, -i));
+
+    METRICS.forEach(m => {
+      const goal = goals[m.key] || 0;
+      const values = last7.map(d => (entries[isoOf(d)] || {})[m.key] || 0);
+      const maxVal = Math.max(goal, ...values, 1);
+      const wrap = document.createElement('div');
+      wrap.className = 'progress-card';
+      const bars = last7.map((d, i) => {
+        const v = values[i];
+        const h = Math.max(4, Math.round((v / maxVal) * 44));
+        const isToday = isSameDay(d, today);
+        const hit = goal > 0 && v >= goal;
+        return `<div class="week-bar">
+          <div class="bar ${isToday ? 'today' : (hit ? 'hit' : '')}" style="height:${h}px" title="${fmtNum(v, m.decimals)} ${m.unit}"></div>
+          <div class="dlabel">${WEEKDAYS[d.getDay()][0].toUpperCase()}</div>
+        </div>`;
+      }).join('');
+      wrap.innerHTML = `
+        <div class="progress-top">
+          <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
+          <div class="p-label">${m.label}</div>
+          <div class="p-value">meta: <strong>${goal || '—'} ${m.unit}</strong></div>
+        </div>
+        <div class="week-bars">${bars}</div>
+      `;
+      weekCard.appendChild(wrap);
+    });
+
+    TOGGLES.forEach(t => {
+      const goalWeekly = goals[t.key + '_weekly'] || 0;
+      const count = last7.filter(d => (entries[isoOf(d)] || {})[t.key]).length;
+      const wrap = document.createElement('div');
+      wrap.className = 'progress-card';
+      const dots = last7.map(d => {
+        const on = !!(entries[isoOf(d)] || {})[t.key];
+        return `<div class="dot ${on ? 'on' : ''}" title="${WEEKDAYS[d.getDay()]}">${on ? '✓' : ''}</div>`;
+      }).join('');
+      wrap.innerHTML = `
+        <div class="progress-top">
+          <div class="metric-icon" style="background:${t.bg}; color:${t.fg}">${t.icon()}</div>
+          <div class="p-label">${t.label}</div>
+          <div class="p-value"><strong>${count}</strong> / ${goalWeekly} dias esta semana</div>
+        </div>
+        <div class="week-dots">${dots}</div>
+      `;
+      weekCard.appendChild(wrap);
+    });
+
+    renderHistory();
+  }
+
+  function chipHtml(m, val) {
+    if (!val) return '';
+    return `<span class="chip">${m.label}: <strong>${fmtNum(val, m.decimals)}${m.unit}</strong></span>`;
+  }
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    list.innerHTML = '';
+    const isos = Object.keys(entries).sort((a,b) => b.localeCompare(a));
+    if (!isos.length) {
+      list.innerHTML = '<div class="empty-note">Nenhum dia registrado ainda. Vá em "Hoje" para começar.</div>';
+      return;
+    }
+    isos.slice(0, 30).forEach(iso => {
+      const e = entries[iso];
+      const d = new Date(iso + 'T00:00:00');
+      const item = document.createElement('div');
+      item.className = 'history-item' + (iso === isoOf(currentDate) ? ' active' : '');
+      let chips = METRICS.map(m => chipHtml(m, e[m.key])).join('');
+      TOGGLES.forEach(t => { if (e[t.key]) chips += `<span class="chip">${t.label}</span>`; });
+      if (!chips) chips = '<span class="chip">sem registros</span>';
+      item.innerHTML = `
+        <div class="history-date"><div class="dow">${WEEKDAYS[d.getDay()]}</div><div class="dom">${d.getDate()}</div></div>
+        <div class="history-chips">${chips}</div>
+      `;
+      item.addEventListener('click', () => {
+        document.querySelector('.tabs button[data-tab="log"]').click();
+        goToDate(d);
+      });
+      list.appendChild(item);
+    });
+  }
+
+  // ---------- GOALS VIEW ----------
+  function renderGoalsView() {
+    const mCard = document.getElementById('goalsMetricsCard');
+    mCard.innerHTML = '';
+    METRICS.forEach((m, idx) => {
+      const row = document.createElement('div');
+      row.className = 'goal-row';
+      row.innerHTML = `
+        <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
+        <div class="metric-info"><div class="label">${m.label}</div></div>
+        <div class="goal-input-wrap">
+          <input type="number" inputmode="decimal" data-goal="${m.key}" value="${goals[m.key]}" step="${m.step}" min="0">
+          <span class="unit">${m.unit}</span>
+        </div>
+      `;
+      mCard.appendChild(row);
+    });
+
+    const tCard = document.getElementById('goalsToggleCard');
+    tCard.innerHTML = '';
+    TOGGLES.forEach(t => {
+      const row = document.createElement('div');
+      row.className = 'goal-row';
+      row.innerHTML = `
+        <div class="metric-icon" style="background:${t.bg}; color:${t.fg}">${t.icon()}</div>
+        <div class="metric-info"><div class="label">${t.label}</div></div>
+        <div class="goal-input-wrap">
+          <input type="number" data-goal="${t.key}_weekly" value="${goals[t.key + '_weekly']}" step="1" min="0" max="7">
+          <span class="unit">x/sem</span>
+        </div>
+      `;
+      tCard.appendChild(row);
+    });
+
+    document.querySelectorAll('[data-goal]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const key = inp.dataset.goal;
+        let val = parseFloat(inp.value);
+        if (isNaN(val) || val < 0) val = 0;
+        if (key.endsWith('_weekly')) val = Math.min(7, Math.round(val));
+        goals[key] = val;
+        persistGoals();
+        flashSaved('Metas atualizadas.', 'goalsFlash');
+      });
+    });
+  }
+
+  // ---------- ICONS ----------
+  function iconMoon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>`; }
+  function iconBook() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H12v16H5.5c-.8 0-1.5-.7-1.5-1.5v-13Z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H12v16h6.5c.8 0 1.5-.7 1.5-1.5v-13Z"/></svg>`; }
+  function iconDrop() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7 6.5 11.5a6.5 6.5 0 1 1-13 0C5.5 10 12 3 12 3Z"/></svg>`; }
+  function iconRun() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="15.5" cy="5" r="1.7" fill="currentColor" stroke="none"/><path d="M6 21l3-5 2-2.5-1-4M17 8.5l-3.5.5-2 3 2.5 3 3.5 1.5M9 10.5 6 9"/></svg>`; }
+  function iconDumbbell() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9v6M4 10.5v3M20 10.5v3M17.5 9v6M6.5 12h11"/></svg>`; }
+  function iconFlame() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s4 3.5 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2.5-.2 1.2.6 2 1.3 2 .9 0 1.2-1 .7-2C10 7 12 3 12 3Zm-4.5 8c0 3.6 2.9 6.5 6.5 6.5s6.5-2.9 6.5-6.5"/></svg>`; }
+  function iconHeart() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.7-9.5-9.4C1.3 8 2.7 5 5.8 4.3c2-.5 3.9.3 5 2 .3.4.9.4 1.2 0 1.1-1.7 3-2.5 5-2 3.1.7 4.5 3.7 3.3 6.8-2 4.7-9.3 9.4-9.3 9.4Z"/></svg>`; }
+  function iconPill() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M10.2 11.3 13.8 14.8"/></svg>`; }
+
+  loadEntries();
+  loadGoals();
+  goToDate(new Date());
+})();
+</script>
+</body>
+</html>
