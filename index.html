@@ -143,6 +143,16 @@
   .toggle.on { background: var(--moss); }
   .toggle.on::after { transform: translateX(20px); }
 
+  .tick-group { display: flex; gap: 6px; flex-shrink: 0; }
+  .tick-dot {
+    width: 27px; height: 27px; border-radius: 50%; border: 1px solid var(--line);
+    background: var(--paper); color: #fff; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer;
+    transition: background .12s ease, border-color .12s ease;
+  }
+  .tick-dot.on { background: var(--moss); border-color: var(--moss); }
+  .tick-dot:active { transform: scale(0.94); }
+
   .save-bar { display: flex; gap: 10px; margin-bottom: 26px; }
   .save-bar button {
     font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600;
@@ -215,12 +225,31 @@
 </style>
 </head>
 <body>
+<div id="lockScreen" style="position:fixed; inset:0; background:var(--paper); z-index:9999; display:flex; align-items:center; justify-content:center; padding:24px;">
+  <div style="max-width:320px; width:100%; background:var(--paper-raised); border:1px solid var(--line); border-radius:18px; padding:26px 22px; text-align:center; box-shadow:0 1px 2px var(--shadow);">
+    <div style="font-family:'Fraunces',serif; font-weight:600; font-size:22px; margin-bottom:6px;">🔒 Ritmo</div>
+    <div id="lockSubtitle" style="font-size:13px; color:var(--ink-soft); margin-bottom:18px;">Digite seu PIN para continuar</div>
+    <input id="lockInput" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="••••"
+      style="width:100%; text-align:center; font-size:22px; letter-spacing:6px; padding:12px; border-radius:12px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:'Space Grotesk',sans-serif; margin-bottom:12px; box-sizing:border-box;">
+    <input id="lockInputConfirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="confirme o PIN"
+      style="display:none; width:100%; text-align:center; font-size:22px; letter-spacing:6px; padding:12px; border-radius:12px; border:1px solid var(--line); background:var(--paper); color:var(--ink); font-family:'Space Grotesk',sans-serif; margin-bottom:12px; box-sizing:border-box;">
+    <button id="lockSubmit" style="width:100%; padding:13px; border-radius:12px; border:none; background:var(--night); color:#f4f2ec; font-weight:600; font-family:'Space Grotesk',sans-serif; cursor:pointer;">Entrar</button>
+    <div id="lockError" style="min-height:16px; font-size:12px; color:var(--danger); margin-top:10px;"></div>
+    <button id="lockForgot" style="margin-top:4px; background:none; border:none; color:var(--ink-soft); font-size:11.5px; text-decoration:underline; cursor:pointer;">esqueci o PIN</button>
+  </div>
+</div>
 <div class="shell">
 
   <header class="top">
     <div class="word">R<em>i</em>tmo</div>
     <div class="tag">Sono, leitura, água, treino e mais — registrado em segundos.</div>
   </header>
+
+  <div id="storageWarning" style="display:none; background:var(--dawn-soft); border:1px solid var(--dawn); color:var(--ink); border-radius:14px; padding:12px 14px; font-size:12.5px; margin-bottom:16px;">
+    ⚠ Este navegador está bloqueando o armazenamento local (modo anônimo/privado ou configuração de privacidade). Os registros não vão ser salvos aqui. Tente abrir em uma aba normal.
+  </div>
+
+  <div id="syncStatus" style="text-align:center; font-size:11.5px; color:var(--ink-soft); margin:-4px 0 16px;">Conectando à nuvem…</div>
 
   <div class="tabs">
     <button class="tab active" data-tab="log">Hoje</button>
@@ -240,6 +269,10 @@
     </div>
 
     <div class="card" id="metricsCard"></div>
+
+    <div class="section-title" style="margin-top:6px;">Suplementos</div>
+    <div class="card" id="supplementsCard"></div>
+
     <div class="card" id="togglesCard"></div>
 
     <div class="save-bar">
@@ -255,6 +288,7 @@
     <div class="section-sub">Progresso do dia em relação às metas.</div>
     <div class="stats-row" id="statsRow"></div>
     <div class="card" id="progressCard"></div>
+    <div class="card" id="supplementsProgressCard" style="margin-top:12px;"></div>
 
     <div class="section-title">Últimos 7 dias</div>
     <div class="section-sub">Toque em "Metas" para ajustar os alvos.</div>
@@ -274,15 +308,64 @@
     <div class="section-sub">Quantos dias por semana você quer marcar "sim".</div>
     <div class="card" id="goalsToggleCard"></div>
 
+    <div class="section-sub" style="margin-top:14px;">Suplementos — em quantos dias por semana quer bater a dose completa.</div>
+    <div class="card" id="goalsSupplementsCard"></div>
+
     <div class="goals-save-flash" id="goalsFlash"></div>
+
+    <div class="section-title">Backup</div>
+    <div class="section-sub">Se os dados sumirem ao fechar o navegador, exporte um backup de vez em quando e guarde o arquivo.</div>
+    <div class="card">
+      <div class="goal-row">
+        <div class="metric-info"><div class="label">Exportar backup</div><div class="value-line" style="font-size:12px; color:var(--ink-soft);">baixa um arquivo .json com tudo</div></div>
+        <button class="save" id="exportBtn" style="padding:10px 14px; font-size:13px;">Baixar</button>
+      </div>
+      <div class="goal-row">
+        <div class="metric-info"><div class="label">Importar backup</div><div class="value-line" style="font-size:12px; color:var(--ink-soft);">restaura a partir de um arquivo .json</div></div>
+        <label for="importFile" class="save" style="padding:10px 14px; font-size:13px; background:var(--paper); color:var(--ink); border:1px solid var(--line); cursor:pointer;">Escolher arquivo</label>
+        <input type="file" id="importFile" accept="application/json" style="display:none;">
+      </div>
+    </div>
+    <div class="goals-save-flash" id="backupFlash"></div>
+
+    <div class="section-title">Segurança</div>
+    <div class="section-sub">PIN local deste aparelho — é só uma trava simples contra acesso casual, não uma senha de verdade.</div>
+    <div class="card">
+      <div class="goal-row">
+        <div class="metric-info"><div class="label">Trocar PIN</div><div class="value-line" style="font-size:12px; color:var(--ink-soft);">pede um novo PIN a partir de agora</div></div>
+        <button class="save" id="changePinBtn" style="padding:10px 14px; font-size:13px;">Trocar</button>
+      </div>
+    </div>
   </div>
 
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-database-compat.js"></script>
+<script>
+  try {
+    const firebaseConfig = {
+      apiKey: "AIzaSyAR2O88i9M0Zxi0Y67StZ1wPgJ9OMQFBG4",
+      authDomain: "ritmo-habitos-db94f.firebaseapp.com",
+      databaseURL: "https://ritmo-habitos-db94f-default-rtdb.firebaseio.com",
+      projectId: "ritmo-habitos-db94f",
+      storageBucket: "ritmo-habitos-db94f.firebasestorage.app",
+      messagingSenderId: "650559169885",
+      appId: "1:650559169885:web:b72935d7e7b7794fd5f4b4"
+    };
+    firebase.initializeApp(firebaseConfig);
+    window.firebaseDb = firebase.database();
+  } catch (e) {
+    console.error('Falha ao iniciar Firebase', e);
+    window.firebaseDb = null;
+  }
+</script>
 <script>
 (function () {
   const STORAGE_KEY = 'ritmo-entries-v1';
   const GOALS_KEY = 'ritmo-goals-v1';
+  const PIN_KEY = 'ritmo-pin-hash-v1';
+  const UNLOCK_KEY = 'ritmo-unlocked-session';
 
   const METRICS = [
     { key: 'sleepHours', label: 'Sono', unit: 'h', step: 0.5, min: 0, max: 16, decimals: 1,
@@ -301,12 +384,17 @@
 
   const TOGGLES = [
     { key: 'sex', label: 'Sexo', icon: iconHeart, bg: '#f3d9df', fg: '#b1546e' },
-    { key: 'creatine', label: 'Creatina', icon: iconPill, bg: '#e2ddf5', fg: '#6b57ab' },
+  ];
+
+  const SUPPLEMENTS = [
+    { key: 'creatine', label: 'Creatina', max: 1, icon: iconPill, bg: '#e2ddf5', fg: '#6b57ab' },
+    { key: 'q10', label: 'Coenzima Q10', max: 2, icon: iconCapsule, bg: '#fbe6c8', fg: '#b3812f' },
+    { key: 'omega3', label: 'Ômega 3', max: 4, icon: iconDropCapsule, bg: '#d9ecf5', fg: '#2f7fa8' },
   ];
 
   const DEFAULT_GOALS = {
     sleepHours: 8, readingMin: 30, waterMl: 2000, aerobicMin: 30, muscMin: 45, calories: 2200,
-    sex_weekly: 3, creatine_weekly: 7,
+    sex_weekly: 3, creatine_weekly: 7, q10_weekly: 7, omega3_weekly: 7,
   };
 
   const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -328,10 +416,14 @@
   function loadEntries() {
     try { const raw = localStorage.getItem(STORAGE_KEY); entries = raw ? JSON.parse(raw) : {}; }
     catch (e) { entries = {}; }
+    normalizeAllEntries();
   }
   function persistEntries() {
+    let ok = true;
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
-    catch (e) { console.error('Não foi possível salvar', e); }
+    catch (e) { console.error('Não foi possível salvar', e); ok = false; }
+    pushRemote('entries', entries);
+    return ok;
   }
   function loadGoals() {
     try {
@@ -340,17 +432,95 @@
     } catch (e) { goals = { ...DEFAULT_GOALS }; }
   }
   function persistGoals() {
+    let ok = true;
     try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); }
-    catch (e) { console.error('Não foi possível salvar metas', e); }
+    catch (e) { console.error('Não foi possível salvar metas', e); ok = false; }
+    pushRemote('goals', goals);
+    return ok;
+  }
+
+  // ---------- SINCRONIZAÇÃO COM O FIREBASE ----------
+  function setSyncStatus(ok, msg) {
+    const el = document.getElementById('syncStatus');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = ok ? 'var(--moss)' : 'var(--danger)';
+  }
+
+  function pushRemote(path, data) {
+    if (!window.firebaseDb) { setSyncStatus(false, '⚠ Firebase indisponível — salvo só neste aparelho.'); return; }
+    window.firebaseDb.ref(path).set(data)
+      .then(() => setSyncStatus(true, '☁ Sincronizado com a nuvem.'))
+      .catch(() => setSyncStatus(false, '⚠ Não sincronizou — salvo só neste aparelho.'));
+  }
+
+  function refreshActiveView() {
+    if (document.getElementById('view-dashboard').classList.contains('active')) renderDashboard();
+    if (document.getElementById('view-goals').classList.contains('active')) renderGoalsView();
+  }
+
+  function attachLiveListeners() {
+    window.firebaseDb.ref('entries').on('value', snap => {
+      entries = snap.val() || {};
+      normalizeAllEntries();
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); } catch (e) {}
+      refreshActiveView();
+    });
+    window.firebaseDb.ref('goals').on('value', snap => {
+      const remote = snap.val();
+      if (remote) goals = { ...DEFAULT_GOALS, ...remote };
+      try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); } catch (e) {}
+      refreshActiveView();
+    });
+  }
+
+  async function initRemoteSync() {
+    if (!window.firebaseDb) { setSyncStatus(false, '⚠ Firebase indisponível — usando cópia local.'); return; }
+    try {
+      const [entriesSnap, goalsSnap] = await Promise.all([
+        window.firebaseDb.ref('entries').once('value'),
+        window.firebaseDb.ref('goals').once('value'),
+      ]);
+      const remoteEntries = entriesSnap.val();
+      const remoteGoals = goalsSnap.val();
+      if (remoteEntries) entries = remoteEntries;
+      if (remoteGoals) goals = { ...DEFAULT_GOALS, ...remoteGoals };
+      normalizeAllEntries();
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+        localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+      } catch (e) {}
+      draft = getDraft(isoOf(currentDate));
+      renderMetrics(); renderToggles(); renderSupplements();
+      refreshActiveView();
+      setSyncStatus(true, '☁ Sincronizado com a nuvem.');
+      attachLiveListeners();
+    } catch (e) {
+      setSyncStatus(false, '⚠ Sem conexão com a nuvem — usando cópia local deste aparelho.');
+    }
   }
 
   function emptyEntry() {
     const e = {};
     METRICS.forEach(m => e[m.key] = 0);
     TOGGLES.forEach(t => e[t.key] = false);
+    SUPPLEMENTS.forEach(s => e[s.key] = 0);
     return e;
   }
-  function getDraft(iso) { return entries[iso] ? { ...emptyEntry(), ...entries[iso] } : emptyEntry(); }
+  function normalizeEntry(e) {
+    const out = { ...e };
+    SUPPLEMENTS.forEach(s => {
+      let v = out[s.key];
+      if (typeof v === 'boolean') v = v ? 1 : 0;
+      if (typeof v !== 'number' || isNaN(v)) v = 0;
+      out[s.key] = Math.max(0, Math.min(s.max, Math.round(v)));
+    });
+    return out;
+  }
+  function normalizeAllEntries() {
+    Object.keys(entries).forEach(iso => { entries[iso] = normalizeEntry(entries[iso]); });
+  }
+  function getDraft(iso) { return normalizeEntry(entries[iso] ? { ...emptyEntry(), ...entries[iso] } : emptyEntry()); }
   function fmtNum(v, decimals) { return decimals > 0 ? Number(v).toFixed(decimals) : String(Math.round(v)); }
 
   // ---------- TABS ----------
@@ -451,28 +621,60 @@
     });
   }
 
-  function flashSaved(msg, elId) {
+  function renderSupplements() {
+    const card = document.getElementById('supplementsCard');
+    card.innerHTML = '';
+    SUPPLEMENTS.forEach((s, idx) => {
+      const row = document.createElement('div');
+      row.className = 'metric-row' + (idx < SUPPLEMENTS.length - 1 ? ' bordered' : '');
+      const val = draft[s.key] || 0;
+      const dots = Array.from({ length: s.max }, (_, i) => i + 1).map(n => {
+        const filled = val >= n;
+        return `<button class="tick-dot ${filled ? 'on' : ''}" data-key="${s.key}" data-n="${n}" aria-label="${s.label} ${n}">${filled ? '✓' : ''}</button>`;
+      }).join('');
+      row.innerHTML = `
+        <div class="metric-icon" style="background:${s.bg}; color:${s.fg}">${s.icon()}</div>
+        <div class="metric-info">
+          <div class="label">${s.label}</div>
+          <div class="value-line">tomado: <strong>${val}/${s.max}</strong></div>
+        </div>
+        <div class="tick-group">${dots}</div>
+      `;
+      card.appendChild(row);
+    });
+    card.querySelectorAll('.tick-dot').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        const n = parseInt(btn.dataset.n, 10);
+        draft[key] = (draft[key] === n) ? n - 1 : n;
+        renderSupplements();
+      });
+    });
+  }
+
+  function flashSaved(msg, elId, isError) {
     const el = document.getElementById(elId || 'saveFlash');
     el.textContent = msg;
-    setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 1800);
+    el.style.color = isError ? 'var(--danger)' : 'var(--moss)';
+    setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, isError ? 4000 : 1800);
   }
 
   function saveDay() {
     entries[isoOf(currentDate)] = { ...draft };
-    persistEntries();
-    flashSaved('Dia salvo.');
+    const ok = persistEntries();
+    flashSaved(ok ? 'Dia salvo.' : '⚠ Não foi possível salvar — o navegador está bloqueando o armazenamento local.', 'saveFlash', !ok);
   }
   function clearDay() {
     delete entries[isoOf(currentDate)];
-    persistEntries();
+    const ok = persistEntries();
     draft = emptyEntry();
-    renderMetrics(); renderToggles();
-    flashSaved('Dia limpo.');
+    renderMetrics(); renderToggles(); renderSupplements();
+    flashSaved(ok ? 'Dia limpo.' : '⚠ Não foi possível salvar a alteração.', 'saveFlash', !ok);
   }
   function goToDate(d) {
     currentDate = startOfDay(d);
     draft = getDraft(isoOf(currentDate));
-    renderDateLabel(); renderMetrics(); renderToggles();
+    renderDateLabel(); renderMetrics(); renderToggles(); renderSupplements();
   }
 
   document.getElementById('prevDay').addEventListener('click', () => goToDate(addDays(currentDate, -1)));
@@ -490,7 +692,7 @@
     let streak = 0;
     for (let i = 0; i < 400; i++) {
       const e = entries[isoOf(addDays(today, -i))];
-      if (e && e.creatine) streak++; else break;
+      if (e && (e.creatine || 0) >= 1) streak++; else break;
     }
     let sleepSum = 0, sleepCount = 0, waterSum = 0, waterCount = 0;
     for (let i = 0; i < 7; i++) {
@@ -532,6 +734,25 @@
         <div class="progress-track"><div class="progress-fill ${over ? 'over' : ''}" style="width:${pct}%"></div></div>
       `;
       progressCard.appendChild(wrap);
+    });
+
+    // today's supplement progress
+    const supplementsProgressCard = document.getElementById('supplementsProgressCard');
+    supplementsProgressCard.innerHTML = '';
+    SUPPLEMENTS.forEach(s => {
+      const val = todayEntry[s.key] || 0;
+      const pct = Math.min(100, Math.round((val / s.max) * 100));
+      const wrap = document.createElement('div');
+      wrap.className = 'progress-card';
+      wrap.innerHTML = `
+        <div class="progress-top">
+          <div class="metric-icon" style="background:${s.bg}; color:${s.fg}">${s.icon()}</div>
+          <div class="p-label">${s.label}</div>
+          <div class="p-value"><strong>${val}</strong> / ${s.max} tiques</div>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      `;
+      supplementsProgressCard.appendChild(wrap);
     });
 
     // weekly section: 7-bar charts for metrics + dot rows for toggles
@@ -587,6 +808,28 @@
       weekCard.appendChild(wrap);
     });
 
+    SUPPLEMENTS.forEach(s => {
+      const goalWeekly = goals[s.key + '_weekly'] || 0;
+      const count = last7.filter(d => ((entries[isoOf(d)] || {})[s.key] || 0) >= s.max).length;
+      const wrap = document.createElement('div');
+      wrap.className = 'progress-card';
+      const dots = last7.map(d => {
+        const v = (entries[isoOf(d)] || {})[s.key] || 0;
+        const on = v >= s.max;
+        const partial = v > 0 && v < s.max;
+        return `<div class="dot ${on ? 'on' : ''}" style="${partial ? 'background:var(--dawn-soft); border-color:var(--dawn); color:var(--dawn);' : ''}" title="${WEEKDAYS[d.getDay()]}: ${v}/${s.max}">${on ? '✓' : (partial ? v : '')}</div>`;
+      }).join('');
+      wrap.innerHTML = `
+        <div class="progress-top">
+          <div class="metric-icon" style="background:${s.bg}; color:${s.fg}">${s.icon()}</div>
+          <div class="p-label">${s.label}</div>
+          <div class="p-value"><strong>${count}</strong> / ${goalWeekly} dias com dose completa</div>
+        </div>
+        <div class="week-dots">${dots}</div>
+      `;
+      weekCard.appendChild(wrap);
+    });
+
     renderHistory();
   }
 
@@ -609,6 +852,7 @@
       item.className = 'history-item' + (iso === isoOf(currentDate) ? ' active' : '');
       let chips = METRICS.map(m => chipHtml(m, e[m.key])).join('');
       TOGGLES.forEach(t => { if (e[t.key]) chips += `<span class="chip">${t.label}</span>`; });
+      SUPPLEMENTS.forEach(s => { if (e[s.key] > 0) chips += `<span class="chip">${s.label}: <strong>${e[s.key]}/${s.max}</strong></span>`; });
       if (!chips) chips = '<span class="chip">sem registros</span>';
       item.innerHTML = `
         <div class="history-date"><div class="dow">${WEEKDAYS[d.getDay()]}</div><div class="dom">${d.getDate()}</div></div>
@@ -656,6 +900,22 @@
       tCard.appendChild(row);
     });
 
+    const sCard = document.getElementById('goalsSupplementsCard');
+    sCard.innerHTML = '';
+    SUPPLEMENTS.forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'goal-row';
+      row.innerHTML = `
+        <div class="metric-icon" style="background:${s.bg}; color:${s.fg}">${s.icon()}</div>
+        <div class="metric-info"><div class="label">${s.label}</div></div>
+        <div class="goal-input-wrap">
+          <input type="number" data-goal="${s.key}_weekly" value="${goals[s.key + '_weekly']}" step="1" min="0" max="7">
+          <span class="unit">x/sem</span>
+        </div>
+      `;
+      sCard.appendChild(row);
+    });
+
     document.querySelectorAll('[data-goal]').forEach(inp => {
       inp.addEventListener('change', () => {
         const key = inp.dataset.goal;
@@ -663,11 +923,63 @@
         if (isNaN(val) || val < 0) val = 0;
         if (key.endsWith('_weekly')) val = Math.min(7, Math.round(val));
         goals[key] = val;
-        persistGoals();
-        flashSaved('Metas atualizadas.', 'goalsFlash');
+        const ok = persistGoals();
+        flashSaved(ok ? 'Metas atualizadas.' : '⚠ Não foi possível salvar as metas.', 'goalsFlash', !ok);
       });
     });
   }
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    try {
+      const payload = { entries, goals, exportedAt: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = isoOf(new Date());
+      a.href = url;
+      a.download = `ritmo-backup-${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      flashSaved('Backup baixado.', 'backupFlash', false);
+    } catch (e) {
+      flashSaved('⚠ Não foi possível gerar o backup.', 'backupFlash', true);
+    }
+  });
+
+  document.getElementById('importFile').addEventListener('change', (ev) => {
+    const file = ev.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (data.entries) entries = { ...entries, ...data.entries };
+        if (data.goals) goals = { ...goals, ...data.goals };
+        normalizeAllEntries();
+        const okE = persistEntries();
+        const okG = persistGoals();
+        draft = getDraft(isoOf(currentDate));
+        renderMetrics(); renderToggles(); renderSupplements(); renderGoalsView();
+        flashSaved((okE && okG) ? 'Backup importado.' : '⚠ Importado, mas não foi possível salvar no navegador.', 'backupFlash', !(okE && okG));
+      } catch (e) {
+        flashSaved('⚠ Arquivo inválido.', 'backupFlash', true);
+      }
+      ev.target.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('changePinBtn').addEventListener('click', () => {
+    if (confirm('Isso vai pedir um novo PIN a partir de agora neste aparelho. Continuar?')) {
+      try {
+        localStorage.removeItem(PIN_KEY);
+        sessionStorage.removeItem(UNLOCK_KEY);
+      } catch (e) {}
+      location.reload();
+    }
+  });
 
   // ---------- ICONS ----------
   function iconMoon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>`; }
@@ -678,10 +990,112 @@
   function iconFlame() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s4 3.5 4 8a4 4 0 0 1-8 0c0-1 .5-2 1-2.5-.2 1.2.6 2 1.3 2 .9 0 1.2-1 .7-2C10 7 12 3 12 3Zm-4.5 8c0 3.6 2.9 6.5 6.5 6.5s6.5-2.9 6.5-6.5"/></svg>`; }
   function iconHeart() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-7.5-4.7-9.5-9.4C1.3 8 2.7 5 5.8 4.3c2-.5 3.9.3 5 2 .3.4.9.4 1.2 0 1.1-1.7 3-2.5 5-2 3.1.7 4.5 3.7 3.3 6.8-2 4.7-9.3 9.4-9.3 9.4Z"/></svg>`; }
   function iconPill() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="9.5" width="17" height="7" rx="3.5" transform="rotate(-35 12 13)"/><path d="M10.2 11.3 13.8 14.8"/></svg>`; }
+  function iconCapsule() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="16" rx="7"/><path d="M5 12h14"/></svg>`; }
+  function iconDropCapsule() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s5.5 6 5.5 10a5.5 5.5 0 1 1-11 0c0-4 5.5-10 5.5-10Z"/><path d="M9.3 15.2a2.8 2.8 0 0 0 2.8 2.4"/></svg>`; }
 
-  loadEntries();
-  loadGoals();
-  goToDate(new Date());
+  function storageIsAvailable() {
+    try {
+      const testKey = '__ritmo_test__';
+      localStorage.setItem(testKey, '1');
+      localStorage.removeItem(testKey);
+      return true;
+    } catch (e) { return false; }
+  }
+  function startApp() {
+    if (!storageIsAvailable()) {
+      document.getElementById('storageWarning').style.display = 'block';
+    }
+    loadEntries();
+    loadGoals();
+    goToDate(new Date());
+    initRemoteSync();
+  }
+
+  function initLock(onUnlocked) {
+    const screen = document.getElementById('lockScreen');
+    const subtitle = document.getElementById('lockSubtitle');
+    const input = document.getElementById('lockInput');
+    const confirmInput = document.getElementById('lockInputConfirm');
+    const submitBtn = document.getElementById('lockSubmit');
+    const errorEl = document.getElementById('lockError');
+    const forgotBtn = document.getElementById('lockForgot');
+
+    async function sha256Hex(str) {
+      const enc = new TextEncoder().encode(str);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function unlockAndStart() {
+      try { sessionStorage.setItem(UNLOCK_KEY, '1'); } catch (e) {}
+      screen.style.display = 'none';
+      onUnlocked();
+    }
+
+    let alreadyUnlocked = false;
+    try { alreadyUnlocked = sessionStorage.getItem(UNLOCK_KEY) === '1'; } catch (e) {}
+    if (alreadyUnlocked) { screen.style.display = 'none'; onUnlocked(); return; }
+
+    let existingHash = null;
+    try { existingHash = localStorage.getItem(PIN_KEY); } catch (e) {}
+    let mode = existingHash ? 'enter' : 'set';
+
+    function renderMode() {
+      if (mode === 'set') {
+        subtitle.textContent = 'Crie um PIN para proteger o app neste aparelho';
+        input.placeholder = 'novo PIN';
+        confirmInput.style.display = 'block';
+        submitBtn.textContent = 'Criar PIN';
+        forgotBtn.style.display = 'none';
+      } else {
+        subtitle.textContent = 'Digite seu PIN para continuar';
+        input.placeholder = '••••';
+        confirmInput.style.display = 'none';
+        submitBtn.textContent = 'Entrar';
+        forgotBtn.style.display = 'inline-block';
+      }
+      errorEl.textContent = '';
+      input.value = ''; confirmInput.value = '';
+      input.focus();
+    }
+
+    submitBtn.addEventListener('click', async () => {
+      const val = input.value.trim();
+      if (val.length < 4) { errorEl.textContent = 'Use pelo menos 4 dígitos.'; return; }
+      if (mode === 'set') {
+        const confirmVal = confirmInput.value.trim();
+        if (val !== confirmVal) { errorEl.textContent = 'Os PINs não coincidem.'; return; }
+        const hash = await sha256Hex(val);
+        try { localStorage.setItem(PIN_KEY, hash); } catch (e) {}
+        unlockAndStart();
+      } else {
+        const hash = await sha256Hex(val);
+        if (hash === existingHash) {
+          unlockAndStart();
+        } else {
+          errorEl.textContent = 'PIN incorreto.';
+          input.value = ''; input.focus();
+        }
+      }
+    });
+
+    [input, confirmInput].forEach(el => {
+      el.addEventListener('keydown', (e) => { if (e.key === 'Enter') submitBtn.click(); });
+    });
+
+    forgotBtn.addEventListener('click', () => {
+      if (confirm('Isso remove o PIN deste aparelho (seus dados na nuvem não são apagados). Deseja continuar?')) {
+        try { localStorage.removeItem(PIN_KEY); } catch (e) {}
+        existingHash = null;
+        mode = 'set';
+        renderMode();
+      }
+    });
+
+    renderMode();
+  }
+
+  initLock(startApp);
 })();
 </script>
 </body>
