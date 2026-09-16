@@ -90,7 +90,7 @@
     border: 1px solid var(--line); overflow: hidden; margin-bottom: 18px;
   }
 
-  .metric-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; }
+  .metric-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; flex-wrap: wrap; row-gap: 8px; }
   .metric-row.bordered { border-bottom: 1px solid var(--line); }
   .metric-block:last-child .metric-row.bordered { border-bottom: none; }
 
@@ -121,15 +121,17 @@
   }
   .stepper input::-webkit-outer-spin-button, .stepper input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .stepper input:focus { outline: none; }
+  .stepper input.wide { width: 66px; font-size: 16px; }
 
-  .quick-adds { display: flex; gap: 8px; padding: 0 16px 14px 66px; }
-  .quick-adds.bordered-bottom { border-bottom: 1px solid var(--line); }
-  .quick-chip {
-    font-family: 'Space Grotesk', sans-serif; font-size: 12.5px; font-weight: 600;
+  .label-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .field-group { display: flex; align-items: center; gap: 6px; flex-shrink: 0; margin-left: auto; }
+  .quick-adds-row { display: flex; gap: 4px; }
+  .quick-chip-mini {
+    font-family: 'Space Grotesk', sans-serif; font-size: 10.5px; font-weight: 600;
     color: var(--night-soft); background: var(--paper); border: 1px solid var(--line);
-    border-radius: 999px; padding: 6px 13px; cursor: pointer;
+    border-radius: 999px; padding: 2px 8px; cursor: pointer; line-height: 1.6;
   }
-  .quick-chip:active { background: var(--line); }
+  .quick-chip-mini:active { background: var(--line); }
 
   .toggle-row .metric-info .value-line { display: none; }
   .toggle {
@@ -249,7 +251,7 @@
     ⚠ Este navegador está bloqueando o armazenamento local (modo anônimo/privado ou configuração de privacidade). Os registros não vão ser salvos aqui. Tente abrir em uma aba normal.
   </div>
 
-  <div id="syncStatus" style="text-align:center; font-size:11.5px; color:var(--ink-soft); margin:-4px 0 16px;">Conectando à nuvem…</div>
+  <div id="syncStatus" style="text-align:center; font-size:11.5px; color:var(--ink-soft); margin:-4px 0 16px; cursor:pointer; text-decoration:underline dotted;" title="Toque para tentar sincronizar de novo">Conectando à nuvem…</div>
 
   <div class="tabs">
     <button class="tab active" data-tab="log">Hoje</button>
@@ -368,12 +370,16 @@
   const UNLOCK_KEY = 'ritmo-unlocked-session';
 
   const METRICS = [
+    { key: 'weightKg', label: 'Peso', unit: 'kg', step: 0.1, min: 0, max: 300, decimals: 1,
+      icon: iconScale, bg: '#e4ded2', fg: '#7a6a4f', wideInput: true },
     { key: 'sleepHours', label: 'Sono', unit: 'h', step: 0.5, min: 0, max: 16, decimals: 1,
       icon: iconMoon, bg: 'var(--night-soft)', fg: '#eef0ff' },
+    { key: 'waterMl', label: 'Água', unit: 'ml', step: 100, min: 0, max: 6000, decimals: 0,
+      icon: iconDrop, bg: '#dbe9f2', fg: '#3c7ea8', quickAdds: [200, 500, 1200] },
+    { key: 'meditationMin', label: 'Meditação', unit: 'min', step: 5, min: 0, max: 180, decimals: 0,
+      icon: iconLotus, bg: '#e6e1f2', fg: '#7a63a8' },
     { key: 'readingMin', label: 'Leitura', unit: 'min', step: 5, min: 0, max: 300, decimals: 0,
       icon: iconBook, bg: 'var(--dawn-soft)', fg: 'var(--dawn)' },
-    { key: 'waterMl', label: 'Água', unit: 'ml', step: 100, min: 0, max: 6000, decimals: 0,
-      icon: iconDrop, bg: '#dbe9f2', fg: '#3c7ea8', quickAdds: [200, 500] },
     { key: 'aerobicMin', label: 'Aeróbico', unit: 'min', step: 5, min: 0, max: 240, decimals: 0,
       icon: iconRun, bg: 'var(--moss-soft)', fg: 'var(--moss)' },
     { key: 'muscMin', label: 'Musculação', unit: 'min', step: 5, min: 0, max: 240, decimals: 0,
@@ -384,17 +390,20 @@
 
   const TOGGLES = [
     { key: 'sex', label: 'Sexo', icon: iconHeart, bg: '#f3d9df', fg: '#b1546e' },
+    { key: 'financialControl', label: 'Controle financeiro', icon: iconWallet, bg: '#dcecdf', fg: '#3f8a5c' },
   ];
 
   const SUPPLEMENTS = [
     { key: 'creatine', label: 'Creatina', max: 1, icon: iconPill, bg: '#e2ddf5', fg: '#6b57ab' },
-    { key: 'q10', label: 'Coenzima Q10', max: 2, icon: iconCapsule, bg: '#fbe6c8', fg: '#b3812f' },
-    { key: 'omega3', label: 'Ômega 3', max: 4, icon: iconDropCapsule, bg: '#d9ecf5', fg: '#2f7fa8' },
+    { key: 'q10', label: 'Coenzima Q10', max: 2, icon: iconCapsule, bg: '#fbe6c8', fg: '#b3812f',
+      dosePerTick: 100, doseUnit: 'mg' },
+    { key: 'omega3', label: 'Ômega 3', max: 4, icon: iconDropCapsule, bg: '#d9ecf5', fg: '#2f7fa8',
+      doseParts: [{ label: 'EPA', perTick: 330 }, { label: 'DHA', perTick: 220 }], doseUnit: 'mg' },
   ];
 
   const DEFAULT_GOALS = {
-    sleepHours: 8, readingMin: 30, waterMl: 2000, aerobicMin: 30, muscMin: 45, calories: 2200,
-    sex_weekly: 3, creatine_weekly: 7, q10_weekly: 7, omega3_weekly: 7,
+    weightKg: 0, sleepHours: 8, readingMin: 30, meditationMin: 10, waterMl: 2000, aerobicMin: 30, muscMin: 45, calories: 2200,
+    sex_weekly: 3, financialControl_weekly: 7, creatine_weekly: 7, q10_weekly: 7, omega3_weekly: 7,
   };
 
   const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -444,8 +453,10 @@
     const el = document.getElementById('syncStatus');
     if (!el) return;
     el.textContent = msg;
-    el.style.color = ok ? 'var(--moss)' : 'var(--danger)';
+    el.style.color = ok === null ? 'var(--ink-soft)' : (ok ? 'var(--moss)' : 'var(--danger)');
   }
+
+  document.getElementById('syncStatus').addEventListener('click', () => initRemoteSync());
 
   function pushRemote(path, data) {
     if (!window.firebaseDb) { setSyncStatus(false, '⚠ Firebase indisponível — salvo só neste aparelho.'); return; }
@@ -475,7 +486,8 @@
   }
 
   async function initRemoteSync() {
-    if (!window.firebaseDb) { setSyncStatus(false, '⚠ Firebase indisponível — usando cópia local.'); return; }
+    if (!window.firebaseDb) { setSyncStatus(false, '⚠ Firebase não carregou — usando cópia local. Toque para tentar de novo.'); return; }
+    setSyncStatus(null, 'Conectando à nuvem…');
     try {
       const [entriesSnap, goalsSnap] = await Promise.all([
         window.firebaseDb.ref('entries').once('value'),
@@ -496,7 +508,9 @@
       setSyncStatus(true, '☁ Sincronizado com a nuvem.');
       attachLiveListeners();
     } catch (e) {
-      setSyncStatus(false, '⚠ Sem conexão com a nuvem — usando cópia local deste aparelho.');
+      const detail = (e && (e.code || e.message)) ? ` (${e.code || e.message})` : '';
+      setSyncStatus(false, `⚠ Sem conexão com a nuvem${detail} — usando cópia local. Toque para tentar de novo.`);
+      console.error('Falha ao sincronizar com o Firebase', e);
     }
   }
 
@@ -550,23 +564,25 @@
       const block = document.createElement('div');
       block.className = 'metric-block';
       const hasBorder = idx < METRICS.length - 1;
-      const rowBorderClass = (m.quickAdds ? '' : (hasBorder ? 'bordered' : ''));
+      const quickAddsHtml = m.quickAdds
+        ? `<div class="quick-adds-row">${m.quickAdds.map(q => `<button class="quick-chip-mini" data-key="${m.key}" data-add="${q}">+${q}</button>`).join('')}</div>`
+        : '';
       block.innerHTML = `
-        <div class="metric-row ${rowBorderClass}">
+        <div class="metric-row ${hasBorder ? 'bordered' : ''}">
           <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
           <div class="metric-info">
             <div class="label">${m.label}</div>
             <div class="value-line">registrado: <strong>${fmtNum(draft[m.key], m.decimals)} ${m.unit}</strong></div>
           </div>
-          <div class="stepper">
-            <button data-act="dec" data-key="${m.key}" aria-label="Diminuir">−</button>
-            <input type="number" inputmode="decimal" data-key="${m.key}" value="${fmtNum(draft[m.key], m.decimals)}" step="${m.step}" min="${m.min}" max="${m.max}">
-            <button data-act="inc" data-key="${m.key}" aria-label="Aumentar">+</button>
+          <div class="field-group">
+            ${quickAddsHtml}
+            <div class="stepper">
+              <button data-act="dec" data-key="${m.key}" aria-label="Diminuir">−</button>
+              <input type="number" inputmode="decimal" class="${m.wideInput ? 'wide' : ''}" data-key="${m.key}" value="${fmtNum(draft[m.key], m.decimals)}" step="${m.step}" min="${m.min}" max="${m.max}">
+              <button data-act="inc" data-key="${m.key}" aria-label="Aumentar">+</button>
+            </div>
           </div>
         </div>
-        ${m.quickAdds ? `<div class="quick-adds ${hasBorder ? 'bordered-bottom' : ''}">
-          ${m.quickAdds.map(q => `<button class="quick-chip" data-key="${m.key}" data-add="${q}">+${q}${m.unit}</button>`).join('')}
-        </div>` : ''}
       `;
       card.appendChild(block);
     });
@@ -580,6 +596,7 @@
       });
     });
     card.querySelectorAll('input[type="number"]').forEach(inp => {
+      inp.addEventListener('focus', () => inp.select());
       inp.addEventListener('change', () => {
         const key = inp.dataset.key;
         const m = METRICS.find(x => x.key === key);
@@ -587,7 +604,7 @@
         setMetric(key, isNaN(val) ? 0 : val, m);
       });
     });
-    card.querySelectorAll('.quick-chip').forEach(btn => {
+    card.querySelectorAll('.quick-chip-mini').forEach(btn => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.key;
         const m = METRICS.find(x => x.key === key);
@@ -621,6 +638,17 @@
     });
   }
 
+  function supplementDoseText(s, val) {
+    if (!val || val <= 0) return null;
+    if (s.doseParts) {
+      return s.doseParts.map(p => `${p.perTick * val} ${s.doseUnit || 'mg'} ${p.label}`).join(' + ');
+    }
+    if (s.dosePerTick) {
+      return `${s.dosePerTick * val} ${s.doseUnit || 'mg'}`;
+    }
+    return null;
+  }
+
   function renderSupplements() {
     const card = document.getElementById('supplementsCard');
     card.innerHTML = '';
@@ -628,6 +656,7 @@
       const row = document.createElement('div');
       row.className = 'metric-row' + (idx < SUPPLEMENTS.length - 1 ? ' bordered' : '');
       const val = draft[s.key] || 0;
+      const doseText = supplementDoseText(s, val);
       const dots = Array.from({ length: s.max }, (_, i) => i + 1).map(n => {
         const filled = val >= n;
         return `<button class="tick-dot ${filled ? 'on' : ''}" data-key="${s.key}" data-n="${n}" aria-label="${s.label} ${n}">${filled ? '✓' : ''}</button>`;
@@ -636,7 +665,7 @@
         <div class="metric-icon" style="background:${s.bg}; color:${s.fg}">${s.icon()}</div>
         <div class="metric-info">
           <div class="label">${s.label}</div>
-          <div class="value-line">tomado: <strong>${val}/${s.max}</strong></div>
+          <div class="value-line">tomado: <strong>${doseText || (val + '/' + s.max)}</strong></div>
         </div>
         <div class="tick-group">${dots}</div>
       `;
@@ -852,7 +881,12 @@
       item.className = 'history-item' + (iso === isoOf(currentDate) ? ' active' : '');
       let chips = METRICS.map(m => chipHtml(m, e[m.key])).join('');
       TOGGLES.forEach(t => { if (e[t.key]) chips += `<span class="chip">${t.label}</span>`; });
-      SUPPLEMENTS.forEach(s => { if (e[s.key] > 0) chips += `<span class="chip">${s.label}: <strong>${e[s.key]}/${s.max}</strong></span>`; });
+      SUPPLEMENTS.forEach(s => {
+        if (e[s.key] > 0) {
+          const dose = supplementDoseText(s, e[s.key]);
+          chips += `<span class="chip">${s.label}: <strong>${dose || (e[s.key] + '/' + s.max)}</strong></span>`;
+        }
+      });
       if (!chips) chips = '<span class="chip">sem registros</span>';
       item.innerHTML = `
         <div class="history-date"><div class="dow">${WEEKDAYS[d.getDay()]}</div><div class="dom">${d.getDate()}</div></div>
@@ -982,6 +1016,9 @@
   });
 
   // ---------- ICONS ----------
+  function iconScale() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="12" cy="13" r="4.2"/><path d="M12 13 14 10.5M9 6.5h6"/></svg>`; }
+  function iconWallet() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/><path d="M14.5 12.5h3.5v3h-3.5a1.5 1.5 0 0 1 0-3Z"/><path d="M4 9h16"/></svg>`; }
+  function iconLotus() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20c-4-1-6-4-6-7 3 0 5 1.5 6 4 1-2.5 3-4 6-4 0 3-2 6-6 7Z"/><path d="M12 13c-2.5-1-4-3.3-4-6 2.3 0 4 1.2 4 3.5C12 8.2 13.7 7 16 7c0 2.7-1.5 5-4 6Z"/><path d="M12 20v-7"/></svg>`; }
   function iconMoon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>`; }
   function iconBook() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H12v16H5.5c-.8 0-1.5-.7-1.5-1.5v-13Z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H12v16h6.5c.8 0 1.5-.7 1.5-1.5v-13Z"/></svg>`; }
   function iconDrop() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3s6.5 7 6.5 11.5a6.5 6.5 0 1 1-13 0C5.5 10 12 3 12 3Z"/></svg>`; }
