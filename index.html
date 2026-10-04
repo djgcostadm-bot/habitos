@@ -68,6 +68,26 @@
   .view { display: none; }
   .view.active { display: block; }
 
+  .water-sticky {
+    position: sticky; top: 0; z-index: 40; background: var(--paper);
+    padding: 10px 2px 12px; margin: 0 -2px 14px; border-bottom: 1px solid var(--line);
+  }
+  .water-sticky-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .water-sticky-icon { font-size: 18px; line-height: 1; }
+  .water-sticky-label { flex: 1; font-size: 13.5px; color: var(--ink-soft); }
+  .water-sticky-label strong { color: var(--ink); font-weight: 700; }
+  .water-reset {
+    border: none; background: none; color: var(--ink-soft); font-size: 11px;
+    text-decoration: underline; cursor: pointer; padding: 2px 4px;
+  }
+  .water-sticky-btns { display: flex; gap: 8px; }
+  .water-sticky-btns button {
+    flex: 1; padding: 11px 4px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--paper-raised); color: #3c7ea8; font-family: 'Space Grotesk', sans-serif;
+    font-size: 13.5px; font-weight: 700; cursor: pointer;
+  }
+  .water-sticky-btns button:active { background: #dbe9f2; }
+
   .day-nav {
     display: flex; align-items: center; justify-content: space-between;
     background: var(--night); border-radius: 16px; padding: 14px 8px; margin-bottom: 16px; color: #f4f2ec;
@@ -183,7 +203,19 @@
   .progress-top .p-value strong { color: var(--ink); font-weight: 600; }
   .progress-track { height: 8px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); overflow: hidden; margin-bottom: 10px; }
   .progress-fill { height: 100%; border-radius: 999px; background: var(--moss); transition: width .25s ease; }
-  .progress-fill.over { background: var(--dawn); }
+  .progress-fill.partial { background: #e0b23c; }
+  .mini-progress { height: 4px; border-radius: 999px; background: var(--paper); margin-top: 7px; overflow: hidden; max-width: 160px; }
+  .mini-progress-fill { height: 100%; background: var(--moss); transition: width .2s ease; }
+  .mini-progress-fill.partial { background: #e0b23c; }
+  .metric-row.habit-complete { background: rgba(92, 135, 104, 0.14); }
+  .metric-row.habit-partial { background: rgba(224, 178, 60, 0.16); }
+  .habit-tick {
+    width: 34px; height: 34px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--paper);
+    color: #fff; font-size: 17px; font-weight: 700; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; padding: 0; flex-shrink: 0; transition: background .12s ease, border-color .12s ease;
+  }
+  .habit-tick.on { background: var(--moss); border-color: var(--moss); }
+  .habit-tick:active { transform: scale(0.94); }
 
   .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 44px; }
   .week-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; justify-content: flex-end; height: 100%; }
@@ -195,6 +227,13 @@
   .week-dots { display: flex; gap: 6px; margin-top: 2px; }
   .week-dots .dot { width: 20px; height: 20px; border-radius: 50%; background: var(--paper); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; font-size: 9px; color: var(--ink-soft); }
   .week-dots .dot.on { background: var(--moss); border-color: var(--moss); color: #fff; }
+
+  .weight-chart-svg { display: block; overflow: visible; }
+  .weight-chart-svg .line { fill: none; stroke: var(--night-soft); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .weight-chart-svg .dot { fill: var(--paper-raised); stroke: var(--night-soft); stroke-width: 2; }
+  .weight-chart-svg .dot.today { fill: var(--dawn); stroke: var(--dawn); }
+  .weight-daylabels { display: flex; margin-top: 6px; }
+  .weight-daylabels span { flex: 1; text-align: center; font-size: 9px; color: var(--ink-soft); }
 
   /* goals view */
   .goal-row { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
@@ -223,6 +262,66 @@
 
   .goals-save-flash { text-align: center; font-size: 12.5px; color: var(--moss); margin: 12px 0 6px; min-height: 16px; }
 
+  .add-habit-btn {
+    width: 100%; margin: -4px 0 18px; padding: 13px; border-radius: 14px; cursor: pointer;
+    border: 1.5px dashed var(--line); background: transparent; color: var(--ink-soft);
+    font-family: 'Space Grotesk', sans-serif; font-size: 14px; font-weight: 600;
+  }
+  .add-habit-btn:active { background: var(--line); }
+  .modal-backdrop {
+    position: fixed; inset: 0; background: rgba(10,12,22,0.55); z-index: 5000;
+    display: none; align-items: flex-end; justify-content: center; padding: 0;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    width: 100%; max-width: 560px; background: var(--paper-raised); border-radius: 22px 22px 0 0;
+    padding: 22px 20px 26px; border: 1px solid var(--line); max-height: 92vh; overflow-y: auto;
+  }
+  .modal h3 { font-family: 'Fraunces', serif; font-size: 20px; margin: 0 0 14px; }
+  .modal label.f { display: block; font-size: 12px; color: var(--ink-soft); margin: 12px 0 5px; }
+  .modal input.f {
+    width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--line);
+    background: var(--paper); color: var(--ink); font-family: 'Space Grotesk', sans-serif; font-size: 15px;
+  }
+  .seg { display: flex; gap: 4px; background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+  .seg button {
+    flex: 1; border: none; background: transparent; color: var(--ink-soft); padding: 9px 6px; border-radius: 9px;
+    font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .seg button.active { background: var(--night); color: #f4f2ec; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+  .modal-actions button {
+    flex: 1; padding: 13px; border-radius: 12px; font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; font-weight: 600; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--ink);
+  }
+  .modal-actions .primary { background: var(--night); color: #f4f2ec; border-color: var(--night); }
+  .modal-error { min-height: 16px; font-size: 12px; color: var(--danger); margin-top: 10px; }
+  .del-btn {
+    border: 1px solid var(--line); background: transparent; color: var(--danger); border-radius: 10px;
+    padding: 7px 11px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+  }
+
+  .pomo-card { padding: 30px 20px; text-align: center; }
+  .pomo-mode { font-size: 13px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-soft); font-weight: 600; }
+  .pomo-time { font-family: 'Fraunces', serif; font-size: 58px; font-weight: 600; line-height: 1.1; margin: 6px 0; font-variant-numeric: tabular-nums; }
+  .pomo-cycles { font-size: 12.5px; color: var(--ink-soft); margin-bottom: 18px; }
+  .pomo-actions { display: flex; gap: 10px; }
+  .pomo-card.alarm .pomo-time { color: var(--dawn); }
+
+  .organize-controls { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+  .seg-mini-group { display: flex; gap: 3px; background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
+  .seg-mini {
+    border: none; background: transparent; color: var(--ink-soft); font-family: 'Space Grotesk', sans-serif;
+    font-size: 11px; font-weight: 700; padding: 4px 7px; border-radius: 6px; cursor: pointer;
+  }
+  .seg-mini.active { background: var(--night); color: #f4f2ec; }
+  .updown { display: flex; gap: 4px; }
+  .updown button {
+    width: 24px; height: 22px; border-radius: 6px; border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink-soft); font-size: 10px; cursor: pointer; padding: 0;
+  }
+  .updown button:disabled { opacity: 0.3; cursor: default; }
+
   ::selection { background: var(--dawn-soft); }
 </style>
 </head>
@@ -240,6 +339,32 @@
     <button id="lockForgot" style="margin-top:4px; background:none; border:none; color:var(--ink-soft); font-size:11.5px; text-decoration:underline; cursor:pointer;">esqueci o PIN</button>
   </div>
 </div>
+<div class="modal-backdrop" id="habitModal">
+  <div class="modal">
+    <h3>Novo hábito</h3>
+    <label class="f" for="hName">Nome</label>
+    <input class="f" id="hName" type="text" maxlength="30" placeholder="Ex.: Tomar vitamina D">
+    <label class="f">Tipo</label>
+    <div class="seg" id="hType">
+      <button type="button" data-type="toggle" class="active">Sim / Não</button>
+      <button type="button" data-type="number">Quantidade</button>
+    </div>
+    <div id="hNumberFields" style="display:none;">
+      <label class="f" for="hUnit">Unidade</label>
+      <input class="f" id="hUnit" type="text" maxlength="10" placeholder="min, x, g, páginas…">
+      <label class="f" for="hStep">Passo do +/− </label>
+      <input class="f" id="hStep" type="number" inputmode="decimal" value="1" min="0.01" step="any">
+    </div>
+    <label class="f" for="hGoal" id="hGoalLabel">Meta semanal (dias por semana)</label>
+    <input class="f" id="hGoal" type="number" inputmode="decimal" value="7" min="0" step="any">
+    <div class="modal-error" id="hError"></div>
+    <div class="modal-actions">
+      <button type="button" id="hCancel">Cancelar</button>
+      <button type="button" class="primary" id="hSave">Adicionar</button>
+    </div>
+  </div>
+</div>
+
 <div class="shell">
 
   <header class="top">
@@ -257,10 +382,25 @@
     <button class="tab active" data-tab="log">Hoje</button>
     <button class="tab" data-tab="dashboard">Dashboard</button>
     <button class="tab" data-tab="goals">Metas</button>
+    <button class="tab" data-tab="pomodoro">Pomodoro</button>
   </div>
 
   <!-- LOG VIEW -->
   <div class="view active" id="view-log">
+    <div class="water-sticky" id="waterSticky">
+      <div class="water-sticky-top">
+        <div class="water-sticky-icon">💧</div>
+        <div class="water-sticky-label">Água · <strong id="waterStickyValue">0 ml</strong></div>
+        <button id="waterStickyReset" class="water-reset" aria-label="Zerar água">zerar</button>
+      </div>
+      <div class="water-sticky-btns">
+        <button data-water-add="50">+50</button>
+        <button data-water-add="200">+200</button>
+        <button data-water-add="500">+500</button>
+        <button data-water-add="1200">+1200</button>
+      </div>
+    </div>
+
     <div class="day-nav">
       <button class="arrow" id="prevDay" aria-label="Dia anterior">‹</button>
       <div class="center">
@@ -270,12 +410,22 @@
       <button class="arrow" id="nextDay" aria-label="Próximo dia">›</button>
     </div>
 
-    <div class="card" id="metricsCard"></div>
+    <div id="hojeHabitsWrap">
+      <div id="periodSection-manha">
+        <div class="section-title" style="margin-top:6px;">Manhã</div>
+        <div class="card" id="periodCard-manha"></div>
+      </div>
+      <div id="periodSection-tarde">
+        <div class="section-title" style="margin-top:6px;">Tarde</div>
+        <div class="card" id="periodCard-tarde"></div>
+      </div>
+      <div id="periodSection-noite">
+        <div class="section-title" style="margin-top:6px;">Noite</div>
+        <div class="card" id="periodCard-noite"></div>
+      </div>
+    </div>
 
-    <div class="section-title" style="margin-top:6px;">Suplementos</div>
-    <div class="card" id="supplementsCard"></div>
-
-    <div class="card" id="togglesCard"></div>
+    <button class="add-habit-btn" id="addHabitBtn">＋ Adicionar hábito</button>
 
     <div class="save-bar">
       <button class="save" id="saveBtn">Salvar dia</button>
@@ -302,6 +452,10 @@
 
   <!-- GOALS VIEW -->
   <div class="view" id="view-goals">
+    <div class="section-title">Organizar hábitos</div>
+    <div class="section-sub">Escolha em qual período cada hábito aparece (M = Manhã, T = Tarde, N = Noite) e use as setas para reordenar dentro do período.</div>
+    <div class="card" id="organizeList"></div>
+
     <div class="section-title">Metas diárias</div>
     <div class="section-sub">Define quanto você quer atingir por dia em cada hábito.</div>
     <div class="card" id="goalsMetricsCard"></div>
@@ -314,6 +468,11 @@
     <div class="card" id="goalsSupplementsCard"></div>
 
     <div class="goals-save-flash" id="goalsFlash"></div>
+
+    <div class="section-title">Meus hábitos</div>
+    <div class="section-sub">Hábitos que você criou. Apagar um hábito não apaga o histórico já registrado.</div>
+    <div class="card" id="customHabitsList"></div>
+    <button class="add-habit-btn" id="addHabitBtn2" style="margin-top:0;">＋ Adicionar hábito</button>
 
     <div class="section-title">Backup</div>
     <div class="section-sub">Se os dados sumirem ao fechar o navegador, exporte um backup de vez em quando e guarde o arquivo.</div>
@@ -338,6 +497,46 @@
         <button class="save" id="changePinBtn" style="padding:10px 14px; font-size:13px;">Trocar</button>
       </div>
     </div>
+  </div>
+
+  <!-- POMODORO VIEW -->
+  <div class="view" id="view-pomodoro">
+    <div class="section-title">Pomodoro</div>
+    <div class="card pomo-card">
+      <div class="pomo-mode" id="pomoModeLabel">Foco</div>
+      <div class="pomo-time" id="pomoTimeDisplay">25:00</div>
+      <div class="pomo-cycles" id="pomoCycleLabel">0 ciclos completos</div>
+      <div class="pomo-actions">
+        <button class="save" id="pomoStartPause" style="flex:1;">Iniciar</button>
+        <button class="clear" id="pomoReset" style="flex:0 0 auto; padding:13px 18px;">Reiniciar</button>
+      </div>
+      <button id="pomoSkip" style="margin-top:10px; background:none; border:none; color:var(--ink-soft); font-size:12.5px; text-decoration:underline; cursor:pointer;">pular para a próxima etapa</button>
+    </div>
+
+    <div class="section-title">Configurações</div>
+    <div class="card">
+      <div class="goal-row">
+        <div class="metric-info"><div class="label">Foco</div></div>
+        <div class="goal-input-wrap"><input type="number" id="pomoWork" min="1" max="180" step="1" value="25"><span class="unit">min</span></div>
+      </div>
+      <div class="goal-row">
+        <div class="metric-info"><div class="label">Pausa curta</div></div>
+        <div class="goal-input-wrap"><input type="number" id="pomoShort" min="1" max="60" step="1" value="5"><span class="unit">min</span></div>
+      </div>
+      <div class="goal-row">
+        <div class="metric-info"><div class="label">Pausa longa</div></div>
+        <div class="goal-input-wrap"><input type="number" id="pomoLong" min="1" max="90" step="1" value="15"><span class="unit">min</span></div>
+      </div>
+      <div class="goal-row">
+        <div class="metric-info"><div class="label">Ciclos até a pausa longa</div></div>
+        <div class="goal-input-wrap"><input type="number" id="pomoCycles" min="1" max="12" step="1" value="4"><span class="unit">ciclos</span></div>
+      </div>
+      <div class="goal-row">
+        <div class="metric-info"><div class="label">Continuar automaticamente</div><div class="value-line" style="font-size:12px; color:var(--ink-soft);">toca o alarme e já inicia a próxima etapa</div></div>
+        <button class="toggle on" id="pomoAutoToggle" aria-label="Continuar automaticamente"></button>
+      </div>
+    </div>
+    <div class="section-sub">O alarme sonoro toca no aparelho com o app aberto na tela. Se o celular travar a tela ou trocar de app, o som pode não tocar.</div>
   </div>
 
 </div>
@@ -368,6 +567,13 @@
   const GOALS_KEY = 'ritmo-goals-v1';
   const PIN_KEY = 'ritmo-pin-hash-v1';
   const UNLOCK_KEY = 'ritmo-unlocked-session';
+  const CUSTOM_KEY = 'ritmo-custom-habits-v1';
+  const POMO_KEY = 'ritmo-pomodoro-settings-v1';
+  const CUSTOM_PALETTE = [
+    { bg: '#e0ecf7', fg: '#3b6ea5' }, { bg: '#f7e6d9', fg: '#b3622f' }, { bg: '#e3f1e2', fg: '#4a8a4d' },
+    { bg: '#f1e2f0', fg: '#95509a' }, { bg: '#f7f0d4', fg: '#9a8320' }, { bg: '#dff1f0', fg: '#2f8a86' },
+  ];
+  let customHabits = [];
 
   const METRICS = [
     { key: 'weightKg', label: 'Peso', unit: 'kg', step: 0.1, min: 0, max: 300, decimals: 1,
@@ -375,7 +581,7 @@
     { key: 'sleepHours', label: 'Sono', unit: 'h', step: 0.5, min: 0, max: 16, decimals: 1,
       icon: iconMoon, bg: 'var(--night-soft)', fg: '#eef0ff' },
     { key: 'waterMl', label: 'Água', unit: 'ml', step: 100, min: 0, max: 6000, decimals: 0,
-      icon: iconDrop, bg: '#dbe9f2', fg: '#3c7ea8', quickAdds: [200, 500, 1200] },
+      icon: iconDrop, bg: '#dbe9f2', fg: '#3c7ea8', quickAdds: [50, 200, 500, 1200] },
     { key: 'meditationMin', label: 'Meditação', unit: 'min', step: 5, min: 0, max: 180, decimals: 0,
       icon: iconLotus, bg: '#e6e1f2', fg: '#7a63a8' },
     { key: 'readingMin', label: 'Leitura', unit: 'min', step: 5, min: 0, max: 300, decimals: 0,
@@ -391,6 +597,7 @@
   const TOGGLES = [
     { key: 'sex', label: 'Sexo', icon: iconHeart, bg: '#f3d9df', fg: '#b1546e' },
     { key: 'financialControl', label: 'Controle financeiro', icon: iconWallet, bg: '#dcecdf', fg: '#3f8a5c' },
+    { key: 'shoulderStretch', label: 'Alongamento do ombro', icon: iconStretch, bg: '#fde9e0', fg: '#c1653f' },
   ];
 
   const SUPPLEMENTS = [
@@ -403,7 +610,7 @@
 
   const DEFAULT_GOALS = {
     weightKg: 0, sleepHours: 8, readingMin: 30, meditationMin: 10, waterMl: 2000, aerobicMin: 30, muscMin: 45, calories: 2200,
-    sex_weekly: 3, financialControl_weekly: 7, creatine_weekly: 7, q10_weekly: 7, omega3_weekly: 7,
+    sex_weekly: 3, financialControl_weekly: 7, shoulderStretch_weekly: 7, creatine_weekly: 7, q10_weekly: 7, omega3_weekly: 7,
   };
 
   const WEEKDAYS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
@@ -470,6 +677,147 @@
     if (document.getElementById('view-goals').classList.contains('active')) renderGoalsView();
   }
 
+  // ---------- HÁBITOS PERSONALIZADOS ----------
+  function esc(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function decimalsOfStep(step) { return (String(step).split('.')[1] || '').length; }
+
+  function normalizeCustomList(raw) {
+    const list = Array.isArray(raw) ? raw : Object.values(raw || {});
+    return list.filter(h => h && h.id && h.label && (h.type === 'toggle' || h.type === 'number'))
+      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  }
+
+  function applyCustomHabits() {
+    [METRICS, TOGGLES].forEach(arr => {
+      for (let i = arr.length - 1; i >= 0; i--) if (arr[i].custom) arr.splice(i, 1);
+    });
+    customHabits.forEach((h, i) => {
+      const pal = CUSTOM_PALETTE[i % CUSTOM_PALETTE.length];
+      const key = 'c_' + h.id;
+      if (h.type === 'toggle') {
+        TOGGLES.push({ key, label: esc(h.label), icon: iconStar, bg: pal.bg, fg: pal.fg, custom: true });
+        if (goals[key + '_weekly'] === undefined) goals[key + '_weekly'] = h.goal != null ? h.goal : 7;
+      } else {
+        const step = h.step > 0 ? h.step : 1;
+        METRICS.push({ key, label: esc(h.label), unit: esc(h.unit || ''), step, min: 0, max: 100000,
+          decimals: decimalsOfStep(step), icon: iconStar, bg: pal.bg, fg: pal.fg, custom: true });
+        if (goals[key] === undefined) goals[key] = h.goal != null ? h.goal : 0;
+      }
+    });
+    if (typeof reconcileLayout === 'function') reconcileLayout();
+  }
+
+  function loadCustomHabits() {
+    try { const raw = localStorage.getItem(CUSTOM_KEY); customHabits = normalizeCustomList(raw ? JSON.parse(raw) : []); }
+    catch (e) { customHabits = []; }
+    applyCustomHabits();
+  }
+
+  function persistCustomHabits() {
+    try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(customHabits)); } catch (e) {}
+    const map = {};
+    customHabits.forEach(h => { map[h.id] = h; });
+    pushRemote('customHabits', map);
+  }
+
+  function rerenderAll() {
+    draft = { ...emptyEntry(), ...draft };
+    renderHojeSections(); renderCustomList(); renderOrganizeList();
+    refreshActiveView();
+  }
+
+  function renderCustomList() {
+    const card = document.getElementById('customHabitsList');
+    if (!card) return;
+    card.innerHTML = '';
+    if (!customHabits.length) {
+      card.innerHTML = '<div class="empty-note" style="border:none;">Você ainda não criou nenhum hábito.</div>';
+      return;
+    }
+    customHabits.forEach((h, idx) => {
+      const pal = CUSTOM_PALETTE[idx % CUSTOM_PALETTE.length];
+      const row = document.createElement('div');
+      row.className = 'goal-row';
+      const desc = h.type === 'toggle' ? 'Sim / Não' : `Quantidade${h.unit ? ' · ' + esc(h.unit) : ''}`;
+      row.innerHTML = `
+        <div class="metric-icon" style="background:${pal.bg}; color:${pal.fg}">${iconStar()}</div>
+        <div class="metric-info"><div class="label">${esc(h.label)}</div><div class="value-line" style="font-size:12px; color:var(--ink-soft);">${desc}</div></div>
+        <button class="del-btn" data-del="${esc(h.id)}">Apagar</button>
+      `;
+      card.appendChild(row);
+    });
+    card.querySelectorAll('[data-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const h = customHabits.find(x => x.id === btn.dataset.del);
+        if (!h || !confirm(`Apagar o hábito "${h.label}"? O histórico já registrado fica guardado, mas deixa de aparecer.`)) return;
+        customHabits = customHabits.filter(x => x.id !== h.id);
+        persistCustomHabits();
+        applyCustomHabits();
+        persistLayout();
+        rerenderAll();
+      });
+    });
+  }
+
+  function initHabitModal() {
+    const modal = document.getElementById('habitModal');
+    const nameEl = document.getElementById('hName');
+    const unitEl = document.getElementById('hUnit');
+    const stepEl = document.getElementById('hStep');
+    const goalEl = document.getElementById('hGoal');
+    const goalLabel = document.getElementById('hGoalLabel');
+    const numFields = document.getElementById('hNumberFields');
+    const errEl = document.getElementById('hError');
+    let type = 'toggle';
+
+    function setType(t) {
+      type = t;
+      document.querySelectorAll('#hType button').forEach(b => b.classList.toggle('active', b.dataset.type === t));
+      numFields.style.display = t === 'number' ? 'block' : 'none';
+      goalLabel.textContent = t === 'number' ? 'Meta diária (opcional — 0 = sem meta)' : 'Meta semanal (dias por semana)';
+      goalEl.value = t === 'number' ? '0' : '7';
+    }
+    function open() {
+      nameEl.value = ''; unitEl.value = ''; stepEl.value = '1'; errEl.textContent = '';
+      setType('toggle');
+      modal.classList.add('open');
+      setTimeout(() => nameEl.focus(), 50);
+    }
+    function close() { modal.classList.remove('open'); }
+
+    document.querySelectorAll('#hType button').forEach(b => b.addEventListener('click', () => setType(b.dataset.type)));
+    document.getElementById('addHabitBtn').addEventListener('click', open);
+    document.getElementById('addHabitBtn2').addEventListener('click', open);
+    document.getElementById('hCancel').addEventListener('click', close);
+    modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+    document.getElementById('hSave').addEventListener('click', () => {
+      const label = nameEl.value.trim();
+      if (!label) { errEl.textContent = 'Dê um nome ao hábito.'; return; }
+      let goal = parseFloat(goalEl.value);
+      if (isNaN(goal) || goal < 0) goal = type === 'toggle' ? 7 : 0;
+      if (type === 'toggle') goal = Math.min(7, Math.round(goal));
+      const h = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 5), label, type, goal, createdAt: Date.now() };
+      if (type === 'number') {
+        const step = parseFloat(stepEl.value);
+        if (isNaN(step) || step <= 0) { errEl.textContent = 'O passo precisa ser maior que zero.'; return; }
+        h.step = step;
+        h.unit = unitEl.value.trim();
+      }
+      const key = 'c_' + h.id;
+      if (type === 'toggle') goals[key + '_weekly'] = goal; else goals[key] = goal;
+      customHabits.push(h);
+      persistGoals();
+      persistCustomHabits();
+      applyCustomHabits();
+      persistLayout();
+      rerenderAll();
+      close();
+    });
+  }
+
   function attachLiveListeners() {
     window.firebaseDb.ref('entries').on('value', snap => {
       entries = snap.val() || {};
@@ -480,8 +828,25 @@
     window.firebaseDb.ref('goals').on('value', snap => {
       const remote = snap.val();
       if (remote) goals = { ...DEFAULT_GOALS, ...remote };
+      applyCustomHabits();
       try { localStorage.setItem(GOALS_KEY, JSON.stringify(goals)); } catch (e) {}
       refreshActiveView();
+    });
+    window.firebaseDb.ref('customHabits').on('value', snap => {
+      if (snap.val() === null && customHabits.length) { persistCustomHabits(); return; }
+      customHabits = normalizeCustomList(snap.val());
+      applyCustomHabits();
+      try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(customHabits)); } catch (e) {}
+      rerenderAll();
+    });
+    window.firebaseDb.ref('habitLayout').on('value', snap => {
+      const remote = snap.val();
+      if (!remote && (habitLayout.manha.length || habitLayout.tarde.length || habitLayout.noite.length)) { persistLayout(); return; }
+      if (remote) habitLayout = { manha: [], tarde: [], noite: [], ...remote };
+      reconcileLayout();
+      try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(habitLayout)); } catch (e) {}
+      renderHojeSections();
+      renderOrganizeList();
     });
   }
 
@@ -489,21 +854,31 @@
     if (!window.firebaseDb) { setSyncStatus(false, '⚠ Firebase não carregou — usando cópia local. Toque para tentar de novo.'); return; }
     setSyncStatus(null, 'Conectando à nuvem…');
     try {
-      const [entriesSnap, goalsSnap] = await Promise.all([
+      const [entriesSnap, goalsSnap, customSnap, layoutSnap] = await Promise.all([
         window.firebaseDb.ref('entries').once('value'),
         window.firebaseDb.ref('goals').once('value'),
+        window.firebaseDb.ref('customHabits').once('value'),
+        window.firebaseDb.ref('habitLayout').once('value'),
       ]);
       const remoteEntries = entriesSnap.val();
       const remoteGoals = goalsSnap.val();
+      const remoteCustom = customSnap.val();
+      const remoteLayout = layoutSnap.val();
       if (remoteEntries) entries = remoteEntries;
       if (remoteGoals) goals = { ...DEFAULT_GOALS, ...remoteGoals };
+      if (remoteCustom) customHabits = normalizeCustomList(remoteCustom);
+      if (remoteLayout) habitLayout = { manha: [], tarde: [], noite: [], ...remoteLayout };
+      applyCustomHabits();
+      reconcileLayout();
       normalizeAllEntries();
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
         localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+        localStorage.setItem(CUSTOM_KEY, JSON.stringify(customHabits));
+        localStorage.setItem(LAYOUT_KEY, JSON.stringify(habitLayout));
       } catch (e) {}
       draft = getDraft(isoOf(currentDate));
-      renderMetrics(); renderToggles(); renderSupplements();
+      renderHojeSections(); renderCustomList(); renderOrganizeList();
       refreshActiveView();
       setSyncStatus(true, '☁ Sincronizado com a nuvem.');
       attachLiveListeners();
@@ -544,8 +919,10 @@
       document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('view-' + btn.dataset.tab).classList.add('active');
+      if (autoSaveTimer) { clearTimeout(autoSaveTimer); autoSaveTimer = null; saveDay(); }
       if (btn.dataset.tab === 'dashboard') renderDashboard();
-      if (btn.dataset.tab === 'goals') renderGoalsView();
+      if (btn.dataset.tab === 'goals') { renderGoalsView(); renderOrganizeList(); }
+      if (btn.dataset.tab === 'pomodoro') renderPomodoro();
     });
   });
 
@@ -557,37 +934,169 @@
     document.getElementById('todayBtn').style.display = isSameDay(currentDate, today) ? 'none' : 'inline-block';
   }
 
-  function renderMetrics() {
-    const card = document.getElementById('metricsCard');
-    card.innerHTML = '';
-    METRICS.forEach((m, idx) => {
-      const block = document.createElement('div');
-      block.className = 'metric-block';
-      const hasBorder = idx < METRICS.length - 1;
-      const quickAddsHtml = m.quickAdds
-        ? `<div class="quick-adds-row">${m.quickAdds.map(q => `<button class="quick-chip-mini" data-key="${m.key}" data-add="${q}">+${q}</button>`).join('')}</div>`
-        : '';
-      block.innerHTML = `
-        <div class="metric-row ${hasBorder ? 'bordered' : ''}">
-          <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
-          <div class="metric-info">
-            <div class="label">${m.label}</div>
-            <div class="value-line">registrado: <strong>${fmtNum(draft[m.key], m.decimals)} ${m.unit}</strong></div>
-          </div>
-          <div class="field-group">
-            ${quickAddsHtml}
-            <div class="stepper">
-              <button data-act="dec" data-key="${m.key}" aria-label="Diminuir">−</button>
-              <input type="number" inputmode="decimal" class="${m.wideInput ? 'wide' : ''}" data-key="${m.key}" value="${fmtNum(draft[m.key], m.decimals)}" step="${m.step}" min="${m.min}" max="${m.max}">
-              <button data-act="inc" data-key="${m.key}" aria-label="Aumentar">+</button>
-            </div>
-          </div>
-        </div>
-      `;
-      card.appendChild(block);
-    });
+  // ---------- LAYOUT (Manhã / Tarde / Noite) ----------
+  const PERIODS = [['manha', 'Manhã'], ['tarde', 'Tarde'], ['noite', 'Noite']];
+  let habitLayout = { manha: [], tarde: [], noite: [] };
 
-    card.querySelectorAll('button[data-act]').forEach(btn => {
+  function habitId(type, key) { return type + ':' + key; }
+  function parseHabitId(id) { const i = id.indexOf(':'); return [id.slice(0, i), id.slice(i + 1)]; }
+  function allHabitIds() {
+    return [
+      ...METRICS.map(m => habitId('metric', m.key)),
+      ...SUPPLEMENTS.map(s => habitId('supplement', s.key)),
+      ...TOGGLES.map(t => habitId('toggle', t.key)),
+    ];
+  }
+  function getHabitConfig(id) {
+    const [type, key] = parseHabitId(id);
+    if (type === 'metric') return METRICS.find(m => m.key === key);
+    if (type === 'toggle') return TOGGLES.find(t => t.key === key);
+    if (type === 'supplement') return SUPPLEMENTS.find(s => s.key === key);
+    return null;
+  }
+  function findPeriodOf(id) {
+    for (const [p] of PERIODS) if (habitLayout[p] && habitLayout[p].includes(id)) return p;
+    return null;
+  }
+  function reconcileLayout() {
+    const known = new Set(allHabitIds());
+    PERIODS.forEach(([p]) => {
+      if (!Array.isArray(habitLayout[p])) habitLayout[p] = [];
+      habitLayout[p] = habitLayout[p].filter(id => known.has(id));
+    });
+    const placed = new Set([...habitLayout.manha, ...habitLayout.tarde, ...habitLayout.noite]);
+    allHabitIds().forEach(id => { if (!placed.has(id)) habitLayout.manha.push(id); });
+  }
+  function loadLayout() {
+    try {
+      const raw = localStorage.getItem(LAYOUT_KEY);
+      if (raw) habitLayout = { manha: [], tarde: [], noite: [], ...JSON.parse(raw) };
+    } catch (e) {}
+    reconcileLayout();
+  }
+  function persistLayout() {
+    try { localStorage.setItem(LAYOUT_KEY, JSON.stringify(habitLayout)); } catch (e) {}
+    pushRemote('habitLayout', habitLayout);
+  }
+  function moveHabit(id, dir) {
+    const period = findPeriodOf(id);
+    if (!period) return;
+    const arr = habitLayout[period];
+    const idx = arr.indexOf(id);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= arr.length) return;
+    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
+    persistLayout();
+    renderOrganizeList();
+    renderHojeSections();
+  }
+  function setHabitPeriod(id, newPeriod) {
+    const oldPeriod = findPeriodOf(id);
+    if (oldPeriod === newPeriod) return;
+    if (oldPeriod) habitLayout[oldPeriod] = habitLayout[oldPeriod].filter(x => x !== id);
+    habitLayout[newPeriod].push(id);
+    persistLayout();
+    renderOrganizeList();
+    renderHojeSections();
+  }
+
+  function supplementDoseText(s, val) {
+    if (!val || val <= 0) return null;
+    if (s.doseParts) return s.doseParts.map(p => `${p.perTick * val} ${s.doseUnit || 'mg'} ${p.label}`).join(' + ');
+    if (s.dosePerTick) return `${s.dosePerTick * val} ${s.doseUnit || 'mg'}`;
+    return null;
+  }
+
+  function metricRowHtml(m, hasBorder) {
+    const quickAddsHtml = m.quickAdds
+      ? `<div class="quick-adds-row">${m.quickAdds.map(q => `<button class="quick-chip-mini" data-key="${m.key}" data-add="${q}">+${q}</button>`).join('')}</div>`
+      : '';
+    const judged = m.key !== 'weightKg';
+    const val = draft[m.key] || 0;
+    const goal = goals[m.key] || 0;
+    const pct = goal > 0 ? Math.min(100, Math.round((val / goal) * 100)) : (val > 0 ? 100 : 0);
+    const isPartial = judged && goal > 0 && val < goal;
+    const isComplete = judged && goal > 0 && val >= goal;
+    const stateClass = isComplete ? 'habit-complete' : (isPartial ? 'habit-partial' : '');
+    const barHtml = judged
+      ? `<div class="mini-progress"><div class="mini-progress-fill ${isPartial ? 'partial' : ''}" style="width:${pct}%"></div></div>`
+      : '';
+    return `<div class="metric-row ${hasBorder ? 'bordered' : ''} ${stateClass}">
+      <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
+      <div class="metric-info">
+        <div class="label">${m.label}</div>
+        <div class="value-line">registrado: <strong>${fmtNum(draft[m.key], m.decimals)} ${m.unit}</strong></div>
+        ${barHtml}
+      </div>
+      <div class="field-group">
+        ${quickAddsHtml}
+        <div class="stepper">
+          <button data-act="dec" data-key="${m.key}" aria-label="Diminuir">−</button>
+          <input type="number" inputmode="decimal" class="${m.wideInput ? 'wide' : ''}" data-key="${m.key}" value="${fmtNum(draft[m.key], m.decimals)}" step="${m.step}" min="${m.min}" max="${m.max}">
+          <button data-act="inc" data-key="${m.key}" aria-label="Aumentar">+</button>
+        </div>
+      </div>
+    </div>`;
+  }
+  function toggleRowHtml(t, hasBorder) {
+    const stateClass = draft[t.key] ? 'habit-complete' : '';
+    return `<div class="metric-row toggle-row ${hasBorder ? 'bordered' : ''} ${stateClass}">
+      <div class="metric-icon" style="background:${t.bg}; color:${t.fg}">${t.icon()}</div>
+      <div class="metric-info"><div class="label">${t.label}</div></div>
+      <button class="habit-tick ${draft[t.key] ? 'on' : ''}" data-key="${t.key}" aria-label="${t.label}">${draft[t.key] ? '✓' : ''}</button>
+    </div>`;
+  }
+  function supplementRowHtml(s, hasBorder) {
+    const val = draft[s.key] || 0;
+    const doseText = supplementDoseText(s, val);
+    const isComplete = val >= s.max;
+    const isPartial = val > 0 && val < s.max;
+    const stateClass = isComplete ? 'habit-complete' : (isPartial ? 'habit-partial' : '');
+    const dots = Array.from({ length: s.max }, (_, i) => i + 1).map(n => {
+      const filled = val >= n;
+      return `<button class="tick-dot ${filled ? 'on' : ''}" data-key="${s.key}" data-n="${n}" aria-label="${s.label} ${n}">${filled ? '✓' : ''}</button>`;
+    }).join('');
+    return `<div class="metric-row ${hasBorder ? 'bordered' : ''} ${stateClass}">
+      <div class="metric-icon" style="background:${s.bg}; color:${s.fg}">${s.icon()}</div>
+      <div class="metric-info">
+        <div class="label">${s.label}</div>
+        <div class="value-line">tomado: <strong>${doseText || (val + '/' + s.max)}</strong></div>
+      </div>
+      <div class="tick-group">${dots}</div>
+    </div>`;
+  }
+
+  function updateWaterSticky() {
+    const el = document.getElementById('waterStickyValue');
+    if (el) el.textContent = `${fmtNum(draft.waterMl || 0, 0)} ml`;
+  }
+
+  function renderHojeSections() {
+    reconcileLayout();
+    updateWaterSticky();
+    PERIODS.forEach(([p]) => {
+      const section = document.getElementById('periodSection-' + p);
+      const card = document.getElementById('periodCard-' + p);
+      const ids = (habitLayout[p] || []).filter(id => id !== 'metric:waterMl');
+      if (!ids.length) { section.style.display = 'none'; return; }
+      section.style.display = '';
+      card.innerHTML = ids.map((id, idx) => {
+        const cfg = getHabitConfig(id);
+        if (!cfg) return '';
+        const hasBorder = idx < ids.length - 1;
+        const [type] = parseHabitId(id);
+        if (type === 'metric') return metricRowHtml(cfg, hasBorder);
+        if (type === 'toggle') return toggleRowHtml(cfg, hasBorder);
+        if (type === 'supplement') return supplementRowHtml(cfg, hasBorder);
+        return '';
+      }).join('');
+    });
+    attachHojeListeners();
+  }
+
+  function attachHojeListeners() {
+    const wrap = document.getElementById('hojeHabitsWrap');
+    wrap.querySelectorAll('button[data-act]').forEach(btn => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.key;
         const m = METRICS.find(x => x.key === key);
@@ -595,7 +1104,7 @@
         setMetric(key, draft[key] + delta, m);
       });
     });
-    card.querySelectorAll('input[type="number"]').forEach(inp => {
+    wrap.querySelectorAll('input[type="number"]').forEach(inp => {
       inp.addEventListener('focus', () => inp.select());
       inp.addEventListener('change', () => {
         const key = inp.dataset.key;
@@ -604,7 +1113,7 @@
         setMetric(key, isNaN(val) ? 0 : val, m);
       });
     });
-    card.querySelectorAll('.quick-chip-mini').forEach(btn => {
+    wrap.querySelectorAll('.quick-chip-mini').forEach(btn => {
       btn.addEventListener('click', () => {
         const key = btn.dataset.key;
         const m = METRICS.find(x => x.key === key);
@@ -612,72 +1121,77 @@
         setMetric(key, draft[key] + add, m);
       });
     });
+    wrap.querySelectorAll('.habit-tick').forEach(btn => {
+      btn.addEventListener('click', () => {
+        draft[btn.dataset.key] = !draft[btn.dataset.key];
+        renderHojeSections();
+        scheduleAutoSave();
+      });
+    });
+    wrap.querySelectorAll('.tick-dot').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.key;
+        const n = parseInt(btn.dataset.n, 10);
+        draft[key] = (draft[key] === n) ? n - 1 : n;
+        renderHojeSections();
+        scheduleAutoSave();
+      });
+    });
   }
 
   function setMetric(key, value, m) {
     value = Math.min(m.max, Math.max(m.min, value));
     draft[key] = Math.round(value / m.step) * m.step;
-    renderMetrics();
+    renderHojeSections();
+    scheduleAutoSave();
   }
 
-  function renderToggles() {
-    const card = document.getElementById('togglesCard');
+  let autoSaveTimer = null;
+  function scheduleAutoSave() {
+    if (autoSaveTimer) clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => { saveDay(); }, 500);
+  }
+
+  // ---------- ORGANIZAR HÁBITOS ----------
+  function renderOrganizeList() {
+    const card = document.getElementById('organizeList');
+    if (!card) return;
+    reconcileLayout();
     card.innerHTML = '';
-    TOGGLES.forEach((t, idx) => {
-      const row = document.createElement('div');
-      row.className = 'metric-row toggle-row' + (idx < TOGGLES.length - 1 ? ' bordered' : '');
-      row.innerHTML = `
-        <div class="metric-icon" style="background:${t.bg}; color:${t.fg}">${t.icon()}</div>
-        <div class="metric-info"><div class="label">${t.label}</div></div>
-        <button class="toggle ${draft[t.key] ? 'on' : ''}" data-key="${t.key}" aria-label="${t.label}"></button>
-      `;
-      card.appendChild(row);
-    });
-    card.querySelectorAll('.toggle').forEach(btn => {
-      btn.addEventListener('click', () => { draft[btn.dataset.key] = !draft[btn.dataset.key]; renderToggles(); });
-    });
-  }
-
-  function supplementDoseText(s, val) {
-    if (!val || val <= 0) return null;
-    if (s.doseParts) {
-      return s.doseParts.map(p => `${p.perTick * val} ${s.doseUnit || 'mg'} ${p.label}`).join(' + ');
-    }
-    if (s.dosePerTick) {
-      return `${s.dosePerTick * val} ${s.doseUnit || 'mg'}`;
-    }
-    return null;
-  }
-
-  function renderSupplements() {
-    const card = document.getElementById('supplementsCard');
-    card.innerHTML = '';
-    SUPPLEMENTS.forEach((s, idx) => {
-      const row = document.createElement('div');
-      row.className = 'metric-row' + (idx < SUPPLEMENTS.length - 1 ? ' bordered' : '');
-      const val = draft[s.key] || 0;
-      const doseText = supplementDoseText(s, val);
-      const dots = Array.from({ length: s.max }, (_, i) => i + 1).map(n => {
-        const filled = val >= n;
-        return `<button class="tick-dot ${filled ? 'on' : ''}" data-key="${s.key}" data-n="${n}" aria-label="${s.label} ${n}">${filled ? '✓' : ''}</button>`;
-      }).join('');
-      row.innerHTML = `
-        <div class="metric-icon" style="background:${s.bg}; color:${s.fg}">${s.icon()}</div>
-        <div class="metric-info">
-          <div class="label">${s.label}</div>
-          <div class="value-line">tomado: <strong>${doseText || (val + '/' + s.max)}</strong></div>
-        </div>
-        <div class="tick-group">${dots}</div>
-      `;
-      card.appendChild(row);
-    });
-    card.querySelectorAll('.tick-dot').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const key = btn.dataset.key;
-        const n = parseInt(btn.dataset.n, 10);
-        draft[key] = (draft[key] === n) ? n - 1 : n;
-        renderSupplements();
+    PERIODS.forEach(([p, pLabel]) => {
+      const ids = (habitLayout[p] || []).filter(id => id !== 'metric:waterMl');
+      if (!ids.length) return;
+      const head = document.createElement('div');
+      head.style.cssText = 'padding:10px 16px 4px; font-size:11px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-soft);';
+      head.textContent = pLabel;
+      card.appendChild(head);
+      ids.forEach((id, idx) => {
+        const cfg = getHabitConfig(id);
+        if (!cfg) return;
+        const row = document.createElement('div');
+        row.className = 'goal-row';
+        const periodBtns = PERIODS.map(([pp, ppLabel]) =>
+          `<button class="seg-mini ${pp === p ? 'active' : ''}" data-set-period="${id}" data-period="${pp}">${ppLabel[0]}</button>`
+        ).join('');
+        row.innerHTML = `
+          <div class="metric-icon" style="background:${cfg.bg}; color:${cfg.fg}">${cfg.icon()}</div>
+          <div class="metric-info"><div class="label">${cfg.label}</div></div>
+          <div class="organize-controls">
+            <div class="seg-mini-group">${periodBtns}</div>
+            <div class="updown">
+              <button data-move="${id}" data-dir="-1" ${idx === 0 ? 'disabled' : ''} aria-label="Mover para cima">▲</button>
+              <button data-move="${id}" data-dir="1" ${idx === ids.length - 1 ? 'disabled' : ''} aria-label="Mover para baixo">▼</button>
+            </div>
+          </div>
+        `;
+        card.appendChild(row);
       });
+    });
+    card.querySelectorAll('[data-set-period]').forEach(btn => {
+      btn.addEventListener('click', () => setHabitPeriod(btn.dataset.setPeriod, btn.dataset.period));
+    });
+    card.querySelectorAll('[data-move]').forEach(btn => {
+      btn.addEventListener('click', () => moveHabit(btn.dataset.move, parseInt(btn.dataset.dir, 10)));
     });
   }
 
@@ -697,13 +1211,13 @@
     delete entries[isoOf(currentDate)];
     const ok = persistEntries();
     draft = emptyEntry();
-    renderMetrics(); renderToggles(); renderSupplements();
+    renderHojeSections();
     flashSaved(ok ? 'Dia limpo.' : '⚠ Não foi possível salvar a alteração.', 'saveFlash', !ok);
   }
   function goToDate(d) {
     currentDate = startOfDay(d);
     draft = getDraft(isoOf(currentDate));
-    renderDateLabel(); renderMetrics(); renderToggles(); renderSupplements();
+    renderDateLabel(); renderHojeSections();
   }
 
   document.getElementById('prevDay').addEventListener('click', () => goToDate(addDays(currentDate, -1)));
@@ -751,7 +1265,8 @@
       const val = todayEntry[m.key] || 0;
       const goal = goals[m.key] || 0;
       const pct = goal > 0 ? Math.min(100, Math.round((val / goal) * 100)) : (val > 0 ? 100 : 0);
-      const over = goal > 0 && val > goal;
+      const judged = m.key !== 'weightKg' && m.key !== 'waterMl';
+      const isPartial = judged && goal > 0 && val < goal;
       const wrap = document.createElement('div');
       wrap.className = 'progress-card';
       wrap.innerHTML = `
@@ -760,7 +1275,7 @@
           <div class="p-label">${m.label}</div>
           <div class="p-value"><strong>${fmtNum(val, m.decimals)}</strong> / ${goal || '—'} ${m.unit}</div>
         </div>
-        <div class="progress-track"><div class="progress-fill ${over ? 'over' : ''}" style="width:${pct}%"></div></div>
+        <div class="progress-track"><div class="progress-fill ${isPartial ? 'partial' : ''}" style="width:${pct}%"></div></div>
       `;
       progressCard.appendChild(wrap);
     });
@@ -792,10 +1307,63 @@
 
     METRICS.forEach(m => {
       const goal = goals[m.key] || 0;
-      const values = last7.map(d => (entries[isoOf(d)] || {})[m.key] || 0);
-      const maxVal = Math.max(goal, ...values, 1);
       const wrap = document.createElement('div');
       wrap.className = 'progress-card';
+
+      if (m.key === 'weightKg') {
+        const series = last7.map(d => ({ d, v: (entries[isoOf(d)] || {})[m.key] || 0 }));
+        const present = series.filter(p => p.v > 0);
+        let chartHtml, valueHtml;
+        if (!present.length) {
+          chartHtml = '<div style="text-align:center; font-size:12px; color:var(--ink-soft); padding:10px 0;">Sem registros de peso nos últimos 7 dias.</div>';
+          valueHtml = goal > 0 ? `meta: <strong>${goal} kg</strong>` : '—';
+        } else {
+          const vals = present.map(p => p.v);
+          const min = Math.min(...vals), max = Math.max(...vals);
+          const pad = Math.max(0.2, (max - min) * 0.2);
+          const lo = min - pad, hi = max + pad;
+          const W = 280, H = 54;
+          const xOf = i => (i / 6) * W;
+          const yOf = v => H - ((v - lo) / ((hi - lo) || 1)) * H;
+          let segs = [], cur = [];
+          series.forEach((p, i) => {
+            if (p.v > 0) cur.push([xOf(i), yOf(p.v)]);
+            else if (cur.length) { segs.push(cur); cur = []; }
+          });
+          if (cur.length) segs.push(cur);
+          const pathD = segs.map(seg => 'M' + seg.map(pt => pt.join(',')).join(' L ')).join(' ');
+          const dots = series.map((p, i) => p.v > 0
+            ? `<circle class="dot ${isSameDay(p.d, today) ? 'today' : ''}" cx="${xOf(i)}" cy="${yOf(p.v)}" r="3.5"></circle>`
+            : '').join('');
+          const dayLabels = last7.map(d => `<span>${WEEKDAYS[d.getDay()][0].toUpperCase()}</span>`).join('');
+          chartHtml = `
+            <svg class="weight-chart-svg" viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+              <path class="line" d="${pathD}"></path>
+              ${dots}
+            </svg>
+            <div class="weight-daylabels">${dayLabels}</div>
+          `;
+          const first = present[0].v, last = present[present.length - 1].v;
+          const diff = last - first;
+          const diffTxt = Math.abs(diff) < 0.05 ? 'estável' : `${diff > 0 ? '+' : ''}${diff.toFixed(1)} kg`;
+          valueHtml = goal > 0
+            ? `meta: <strong>${goal} kg</strong>`
+            : `<strong>${last.toFixed(1)} kg</strong> · ${diffTxt}`;
+        }
+        wrap.innerHTML = `
+          <div class="progress-top">
+            <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
+            <div class="p-label">${m.label}</div>
+            <div class="p-value">${valueHtml}</div>
+          </div>
+          ${chartHtml}
+        `;
+        weekCard.appendChild(wrap);
+        return;
+      }
+
+      const values = last7.map(d => (entries[isoOf(d)] || {})[m.key] || 0);
+      const maxVal = Math.max(goal, ...values, 1);
       const bars = last7.map((d, i) => {
         const v = values[i];
         const h = Math.max(4, Math.round((v / maxVal) * 44));
@@ -965,7 +1533,7 @@
 
   document.getElementById('exportBtn').addEventListener('click', () => {
     try {
-      const payload = { entries, goals, exportedAt: new Date().toISOString() };
+      const payload = { entries, goals, customHabits, habitLayout, exportedAt: new Date().toISOString() };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -991,11 +1559,23 @@
         const data = JSON.parse(reader.result);
         if (data.entries) entries = { ...entries, ...data.entries };
         if (data.goals) goals = { ...goals, ...data.goals };
+        if (data.customHabits) {
+          const merged = {};
+          normalizeCustomList(customHabits).concat(normalizeCustomList(data.customHabits)).forEach(h => { merged[h.id] = h; });
+          customHabits = normalizeCustomList(merged);
+          applyCustomHabits();
+          persistCustomHabits();
+        }
+        if (data.habitLayout) {
+          habitLayout = { manha: [], tarde: [], noite: [], ...data.habitLayout };
+          reconcileLayout();
+          persistLayout();
+        }
         normalizeAllEntries();
         const okE = persistEntries();
         const okG = persistGoals();
         draft = getDraft(isoOf(currentDate));
-        renderMetrics(); renderToggles(); renderSupplements(); renderGoalsView();
+        renderHojeSections(); renderGoalsView(); renderOrganizeList();
         flashSaved((okE && okG) ? 'Backup importado.' : '⚠ Importado, mas não foi possível salvar no navegador.', 'backupFlash', !(okE && okG));
       } catch (e) {
         flashSaved('⚠ Arquivo inválido.', 'backupFlash', true);
@@ -1018,6 +1598,8 @@
   // ---------- ICONS ----------
   function iconScale() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><circle cx="12" cy="13" r="4.2"/><path d="M12 13 14 10.5M9 6.5h6"/></svg>`; }
   function iconWallet() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z"/><path d="M14.5 12.5h3.5v3h-3.5a1.5 1.5 0 0 1 0-3Z"/><path d="M4 9h16"/></svg>`; }
+  function iconStar() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8L12 3.5Z"/></svg>`; }
+  function iconStretch() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.2" r="1.7" fill="currentColor" stroke="none"/><path d="M12 7v6M12 7 6 9.5M12 7l6 2.5M12 13l-3 6M12 13l3 6"/></svg>`; }
   function iconLotus() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20c-4-1-6-4-6-7 3 0 5 1.5 6 4 1-2.5 3-4 6-4 0 3-2 6-6 7Z"/><path d="M12 13c-2.5-1-4-3.3-4-6 2.3 0 4 1.2 4 3.5C12 8.2 13.7 7 16 7c0 2.7-1.5 5-4 6Z"/><path d="M12 20v-7"/></svg>`; }
   function iconMoon() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>`; }
   function iconBook() { return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5C4 4.7 4.7 4 5.5 4H12v16H5.5c-.8 0-1.5-.7-1.5-1.5v-13Z"/><path d="M20 5.5c0-.8-.7-1.5-1.5-1.5H12v16h6.5c.8 0 1.5-.7 1.5-1.5v-13Z"/></svg>`; }
@@ -1038,13 +1620,189 @@
       return true;
     } catch (e) { return false; }
   }
+  // ---------- POMODORO ----------
+  let pomoSettings = { work: 25, short: 5, long: 15, cyclesUntilLong: 4, autoContinue: true };
+  let pomoState = { mode: 'work', remaining: 25 * 60, running: false, cyclesCompleted: 0, intervalId: null };
+  let pomoAudioCtx = null;
+
+  function loadPomoSettings() {
+    try {
+      const raw = localStorage.getItem(POMO_KEY);
+      if (raw) pomoSettings = { ...pomoSettings, ...JSON.parse(raw) };
+    } catch (e) {}
+    pomoState.remaining = pomoSettings.work * 60;
+  }
+  function persistPomoSettings() {
+    try { localStorage.setItem(POMO_KEY, JSON.stringify(pomoSettings)); } catch (e) {}
+  }
+
+  function pomoModeSeconds(mode) {
+    if (mode === 'short') return pomoSettings.short * 60;
+    if (mode === 'long') return pomoSettings.long * 60;
+    return pomoSettings.work * 60;
+  }
+
+  function ensurePomoAudio() {
+    try {
+      if (!pomoAudioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        pomoAudioCtx = new AC();
+      }
+      if (pomoAudioCtx.state === 'suspended') pomoAudioCtx.resume();
+    } catch (e) {}
+    return pomoAudioCtx;
+  }
+
+  function playPomoAlarm() {
+    const ctx = ensurePomoAudio();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    for (let i = 0; i < 4; i++) {
+      const t0 = now + i * 0.45;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = i % 2 === 0 ? 880 : 660;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(0.35, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.35);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.4);
+    }
+    const card = document.querySelector('.pomo-card');
+    if (card) {
+      card.classList.add('alarm');
+      setTimeout(() => card.classList.remove('alarm'), 1800);
+    }
+  }
+
+  function pomoAdvanceMode() {
+    if (pomoState.mode === 'work') {
+      pomoState.cyclesCompleted++;
+      pomoState.mode = (pomoState.cyclesCompleted % pomoSettings.cyclesUntilLong === 0) ? 'long' : 'short';
+    } else {
+      pomoState.mode = 'work';
+    }
+    pomoState.remaining = pomoModeSeconds(pomoState.mode);
+  }
+
+  function pomoTick() {
+    pomoState.remaining -= 1;
+    if (pomoState.remaining <= 0) {
+      playPomoAlarm();
+      pomoAdvanceMode();
+      if (!pomoSettings.autoContinue) {
+        clearInterval(pomoState.intervalId);
+        pomoState.running = false;
+      }
+    }
+    renderPomodoro();
+  }
+
+  function pomoStartPause() {
+    ensurePomoAudio();
+    if (pomoState.running) {
+      clearInterval(pomoState.intervalId);
+      pomoState.running = false;
+    } else {
+      pomoState.running = true;
+      pomoState.intervalId = setInterval(pomoTick, 1000);
+    }
+    renderPomodoro();
+  }
+
+  function pomoReset() {
+    clearInterval(pomoState.intervalId);
+    pomoState.running = false;
+    pomoState.mode = 'work';
+    pomoState.cyclesCompleted = 0;
+    pomoState.remaining = pomoModeSeconds('work');
+    renderPomodoro();
+  }
+
+  function pomoSkip() {
+    clearInterval(pomoState.intervalId);
+    pomoState.running = false;
+    pomoAdvanceMode();
+    renderPomodoro();
+  }
+
+  function renderPomoSettingsInputs() {
+    const map = { pomoWork: pomoSettings.work, pomoShort: pomoSettings.short, pomoLong: pomoSettings.long, pomoCycles: pomoSettings.cyclesUntilLong };
+    Object.keys(map).forEach(id => { const el = document.getElementById(id); if (el) el.value = map[id]; });
+    const autoBtn = document.getElementById('pomoAutoToggle');
+    if (autoBtn) autoBtn.classList.toggle('on', !!pomoSettings.autoContinue);
+  }
+
+  function renderPomodoro() {
+    const modeLabelEl = document.getElementById('pomoModeLabel');
+    if (!modeLabelEl) return;
+    const labels = { work: 'Foco', short: 'Pausa curta', long: 'Pausa longa' };
+    modeLabelEl.textContent = labels[pomoState.mode];
+    const mm = String(Math.max(0, Math.floor(pomoState.remaining / 60))).padStart(2, '0');
+    const ss = String(Math.max(0, pomoState.remaining % 60)).padStart(2, '0');
+    document.getElementById('pomoTimeDisplay').textContent = `${mm}:${ss}`;
+    document.getElementById('pomoCycleLabel').textContent = `${pomoState.cyclesCompleted} ciclo${pomoState.cyclesCompleted === 1 ? '' : 's'} completo${pomoState.cyclesCompleted === 1 ? '' : 's'}`;
+    document.getElementById('pomoStartPause').textContent = pomoState.running ? 'Pausar' : 'Iniciar';
+  }
+
+  function initPomodoro() {
+    document.getElementById('pomoStartPause').addEventListener('click', pomoStartPause);
+    document.getElementById('pomoReset').addEventListener('click', pomoReset);
+    document.getElementById('pomoSkip').addEventListener('click', pomoSkip);
+    document.getElementById('pomoAutoToggle').addEventListener('click', () => {
+      pomoSettings.autoContinue = !pomoSettings.autoContinue;
+      persistPomoSettings();
+      renderPomoSettingsInputs();
+    });
+    [['pomoWork', 'work'], ['pomoShort', 'short'], ['pomoLong', 'long'], ['pomoCycles', 'cyclesUntilLong']].forEach(([id, key]) => {
+      document.getElementById(id).addEventListener('change', (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 1) val = 1;
+        pomoSettings[key] = val;
+        persistPomoSettings();
+        renderPomoSettingsInputs();
+        if (!pomoState.running && ((key === 'work' && pomoState.mode === 'work') || (key === 'short' && pomoState.mode === 'short') || (key === 'long' && pomoState.mode === 'long'))) {
+          pomoState.remaining = pomoModeSeconds(pomoState.mode);
+        }
+        renderPomodoro();
+      });
+    });
+    renderPomoSettingsInputs();
+    renderPomodoro();
+  }
+
+  function initWaterSticky() {
+    document.querySelectorAll('[data-water-add]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const m = METRICS.find(x => x.key === 'waterMl');
+        const add = parseFloat(btn.dataset.waterAdd);
+        setMetric('waterMl', (draft.waterMl || 0) + add, m);
+      });
+    });
+    const resetBtn = document.getElementById('waterStickyReset');
+    if (resetBtn) resetBtn.addEventListener('click', () => {
+      const m = METRICS.find(x => x.key === 'waterMl');
+      setMetric('waterMl', 0, m);
+    });
+  }
+
   function startApp() {
     if (!storageIsAvailable()) {
       document.getElementById('storageWarning').style.display = 'block';
     }
-    loadEntries();
     loadGoals();
+    loadCustomHabits();
+    loadLayout();
+    loadEntries();
     goToDate(new Date());
+    renderCustomList();
+    renderOrganizeList();
+    initWaterSticky();
+    loadPomoSettings();
+    initPomodoro();
     initRemoteSync();
   }
 
@@ -1132,6 +1890,7 @@
     renderMode();
   }
 
+  initHabitModal();
   initLock(startApp);
 })();
 </script>
