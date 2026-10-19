@@ -216,6 +216,14 @@
   }
   .habit-tick.on { background: var(--moss); border-color: var(--moss); }
   .habit-tick:active { transform: scale(0.94); }
+  .metric-row.habit-skip { background: rgba(177, 84, 63, 0.16); }
+  .skip-btn {
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink-soft);
+    font-size: 11px; font-weight: 600; cursor: pointer; padding: 5px 10px; border-radius: 999px;
+    font-family: 'Space Grotesk', sans-serif; margin-top: 6px; display: inline-block;
+  }
+  .skip-btn:active { background: var(--line); }
+  .habit-skip .skip-btn { color: #fff; background: var(--danger); border-color: var(--danger); }
 
   .week-bars { display: flex; align-items: flex-end; gap: 5px; height: 44px; }
   .week-bar { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; justify-content: flex-end; height: 100%; }
@@ -890,7 +898,7 @@
   }
 
   function emptyEntry() {
-    const e = {};
+    const e = { skipped: {} };
     METRICS.forEach(m => e[m.key] = 0);
     TOGGLES.forEach(t => e[t.key] = false);
     SUPPLEMENTS.forEach(s => e[s.key] = 0);
@@ -1011,22 +1019,29 @@
     const quickAddsHtml = m.quickAdds
       ? `<div class="quick-adds-row">${m.quickAdds.map(q => `<button class="quick-chip-mini" data-key="${m.key}" data-add="${q}">+${q}</button>`).join('')}</div>`
       : '';
-    const judged = m.key !== 'weightKg';
+    const isWeight = m.key === 'weightKg';
+    const judged = !isWeight;
     const val = draft[m.key] || 0;
     const goal = goals[m.key] || 0;
+    const skipped = !!(draft.skipped && draft.skipped[m.key]);
     const pct = goal > 0 ? Math.min(100, Math.round((val / goal) * 100)) : (val > 0 ? 100 : 0);
-    const isPartial = judged && goal > 0 && val < goal;
-    const isComplete = judged && goal > 0 && val >= goal;
-    const stateClass = isComplete ? 'habit-complete' : (isPartial ? 'habit-partial' : '');
-    const barHtml = judged
+    const isPartial = !skipped && judged && goal > 0 && val < goal;
+    const isComplete = !skipped && (isWeight ? val > 0 : (judged && goal > 0 && val >= goal));
+    const stateClass = skipped ? 'habit-skip' : (isComplete ? 'habit-complete' : (isPartial ? 'habit-partial' : ''));
+    const barHtml = (judged && !skipped)
       ? `<div class="mini-progress"><div class="mini-progress-fill ${isPartial ? 'partial' : ''}" style="width:${pct}%"></div></div>`
       : '';
+    const valueLine = skipped
+      ? `<div class="value-line">não vou fazer hoje</div>`
+      : `<div class="value-line">registrado: <strong>${fmtNum(draft[m.key], m.decimals)} ${m.unit}</strong></div>`;
+    const skipBtn = `<button class="skip-btn" data-skip-toggle="${m.key}">${skipped ? 'desmarcar' : 'não hoje'}</button>`;
     return `<div class="metric-row ${hasBorder ? 'bordered' : ''} ${stateClass}">
       <div class="metric-icon" style="background:${m.bg}; color:${m.fg}">${m.icon()}</div>
       <div class="metric-info">
         <div class="label">${m.label}</div>
-        <div class="value-line">registrado: <strong>${fmtNum(draft[m.key], m.decimals)} ${m.unit}</strong></div>
+        ${valueLine}
         ${barHtml}
+        ${skipBtn}
       </div>
       <div class="field-group">
         ${quickAddsHtml}
@@ -1039,19 +1054,30 @@
     </div>`;
   }
   function toggleRowHtml(t, hasBorder) {
-    const stateClass = draft[t.key] ? 'habit-complete' : '';
+    const skipped = !!(draft.skipped && draft.skipped[t.key]);
+    const stateClass = skipped ? 'habit-skip' : (draft[t.key] ? 'habit-complete' : '');
+    const skipBtn = `<button class="skip-btn" data-skip-toggle="${t.key}">${skipped ? 'desmarcar' : 'não hoje'}</button>`;
     return `<div class="metric-row toggle-row ${hasBorder ? 'bordered' : ''} ${stateClass}">
       <div class="metric-icon" style="background:${t.bg}; color:${t.fg}">${t.icon()}</div>
-      <div class="metric-info"><div class="label">${t.label}</div></div>
+      <div class="metric-info">
+        <div class="label">${t.label}</div>
+        ${skipped ? '<div class="value-line">não hoje</div>' : ''}
+        ${skipBtn}
+      </div>
       <button class="habit-tick ${draft[t.key] ? 'on' : ''}" data-key="${t.key}" aria-label="${t.label}">${draft[t.key] ? '✓' : ''}</button>
     </div>`;
   }
   function supplementRowHtml(s, hasBorder) {
     const val = draft[s.key] || 0;
+    const skipped = !!(draft.skipped && draft.skipped[s.key]);
     const doseText = supplementDoseText(s, val);
-    const isComplete = val >= s.max;
-    const isPartial = val > 0 && val < s.max;
-    const stateClass = isComplete ? 'habit-complete' : (isPartial ? 'habit-partial' : '');
+    const isComplete = !skipped && val >= s.max;
+    const isPartial = !skipped && val > 0 && val < s.max;
+    const stateClass = skipped ? 'habit-skip' : (isComplete ? 'habit-complete' : (isPartial ? 'habit-partial' : ''));
+    const valueLine = skipped
+      ? `<div class="value-line">não vou tomar hoje</div>`
+      : `<div class="value-line">tomado: <strong>${doseText || (val + '/' + s.max)}</strong></div>`;
+    const skipBtn = `<button class="skip-btn" data-skip-toggle="${s.key}">${skipped ? 'desmarcar' : 'não hoje'}</button>`;
     const dots = Array.from({ length: s.max }, (_, i) => i + 1).map(n => {
       const filled = val >= n;
       return `<button class="tick-dot ${filled ? 'on' : ''}" data-key="${s.key}" data-n="${n}" aria-label="${s.label} ${n}">${filled ? '✓' : ''}</button>`;
@@ -1060,7 +1086,8 @@
       <div class="metric-icon" style="background:${s.bg}; color:${s.fg}">${s.icon()}</div>
       <div class="metric-info">
         <div class="label">${s.label}</div>
-        <div class="value-line">tomado: <strong>${doseText || (val + '/' + s.max)}</strong></div>
+        ${valueLine}
+        ${skipBtn}
       </div>
       <div class="tick-group">${dots}</div>
     </div>`;
@@ -1123,7 +1150,9 @@
     });
     wrap.querySelectorAll('.habit-tick').forEach(btn => {
       btn.addEventListener('click', () => {
-        draft[btn.dataset.key] = !draft[btn.dataset.key];
+        const key = btn.dataset.key;
+        draft[key] = !draft[key];
+        if (draft[key] && draft.skipped) draft.skipped[key] = false;
         renderHojeSections();
         scheduleAutoSave();
       });
@@ -1133,6 +1162,18 @@
         const key = btn.dataset.key;
         const n = parseInt(btn.dataset.n, 10);
         draft[key] = (draft[key] === n) ? n - 1 : n;
+        if (draft[key] > 0 && draft.skipped) draft.skipped[key] = false;
+        renderHojeSections();
+        scheduleAutoSave();
+      });
+    });
+    wrap.querySelectorAll('[data-skip-toggle]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.dataset.skipToggle;
+        if (!draft.skipped) draft.skipped = {};
+        const nowSkipped = !draft.skipped[key];
+        draft.skipped[key] = nowSkipped;
+        if (nowSkipped) draft[key] = (typeof draft[key] === 'boolean') ? false : 0;
         renderHojeSections();
         scheduleAutoSave();
       });
@@ -1142,6 +1183,7 @@
   function setMetric(key, value, m) {
     value = Math.min(m.max, Math.max(m.min, value));
     draft[key] = Math.round(value / m.step) * m.step;
+    if (draft[key] > 0 && draft.skipped) draft.skipped[key] = false;
     renderHojeSections();
     scheduleAutoSave();
   }
@@ -1264,8 +1306,9 @@
     METRICS.forEach(m => {
       const val = todayEntry[m.key] || 0;
       const goal = goals[m.key] || 0;
-      const pct = goal > 0 ? Math.min(100, Math.round((val / goal) * 100)) : (val > 0 ? 100 : 0);
-      const judged = m.key !== 'weightKg' && m.key !== 'waterMl';
+      const isWeight = m.key === 'weightKg';
+      const pct = isWeight ? (val > 0 ? 100 : 0) : (goal > 0 ? Math.min(100, Math.round((val / goal) * 100)) : (val > 0 ? 100 : 0));
+      const judged = !isWeight && m.key !== 'waterMl';
       const isPartial = judged && goal > 0 && val < goal;
       const wrap = document.createElement('div');
       wrap.className = 'progress-card';
